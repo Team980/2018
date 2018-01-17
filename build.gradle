@@ -1,0 +1,53 @@
+import jaci.openrio.gradle.GradleRIOPlugin
+import jaci.openrio.gradle.frc.FRCJavaArtifact
+import jaci.openrio.gradle.frc.RoboRIO
+
+// GradleRIO base configuration file.
+// Information on how to use this is available here:
+// https://github.com/Open-RIO/GradleRIO#gradlerio
+plugins {
+    id "java"
+    id "eclipse"
+    id "idea"
+    id "jaci.openrio.gradle.GradleRIO" version "2018.01.11"
+}
+
+def TEAM = 980
+def ROBOT_CLASS = "com.team980.robot2018.Robot"
+
+// Instructions on how to configure this are available here:
+// https://github.com/JacisNonsense/EmbeddedTools#spec
+deploy {
+    targets {
+        target("roborio", RoboRIO) {
+            team = TEAM
+            //addresses << 'roboRIO-980-FRC.local' << '10.9.80.2' //In order of preference
+        }
+    }
+    artifacts {
+        artifact('frcJava', FRCJavaArtifact) {
+            targets << "roborio"
+        }
+    }
+}
+
+dependencies {
+    compile wpilib()
+    compile ctre()
+    compile openrio.powerup.matchData()
+}
+
+// Stable versions are automatically selected based on the installed GradleRIO version
+wpi {
+    //wpilibVersion = '2018.1.1'
+    //ctreVersion = '5.1.2.1'
+}
+
+jar {
+    from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    manifest GradleRIOPlugin.javaManifest(ROBOT_CLASS)
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.4'
+}
