@@ -62,7 +62,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         ypr = new double[3];
 
-        //shifterSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
+        shifterSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
         inLowGear = true;
 
         coprocessor = new Rioduino();
@@ -93,6 +93,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         table.getSubTable("Encoder Distance").getEntry("Left").setNumber(leftDriveEncoder.getDistance());
         table.getSubTable("Encoder Distance").getEntry("Right").setNumber(rightDriveEncoder.getDistance());
+
+        table.getSubTable("Encoder Rate").getEntry("Left").setNumber(leftDriveEncoder.getRate());
+        table.getSubTable("Encoder Rate").getEntry("Right").setNumber(rightDriveEncoder.getRate());
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
@@ -223,7 +226,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
 
-        //shifterSolenoid.set(true); //low
+        shifterSolenoid.set(true); //low
     }
 
     @Override
@@ -242,6 +245,19 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 teleopOperatorControls(gameController);
                 robotDrive.arcadeDrive((gameController.getRawAxis(3) - gameController.getRawAxis(2)), -gameController.getRawAxis(0));
                 break;
+        }
+
+        // AUTOMATIC SHIFTING - TODO FIX LEFT ENCODER
+        if (/*leftDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
+                &&*/ rightDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
+                && inLowGear) {
+            inLowGear = false;
+            shifterSolenoid.set(false);
+        } else if (/*leftDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
+                &&*/ rightDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
+                && !inLowGear) {
+            inLowGear = true;
+            shifterSolenoid.set(true);
         }
 
         if (dalekMode) {

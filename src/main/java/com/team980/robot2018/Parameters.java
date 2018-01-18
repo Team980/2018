@@ -14,6 +14,9 @@ public class Parameters {
     public static final int LEFT_DRIVE_PWM_CHANNEL = 0;
     public static final int RIGHT_DRIVE_PWM_CHANNEL = 1;
 
+    public static final double UPPER_SHIFT_THRESHOLD = 3.25;
+    public static final double LOWER_SHIFT_THRESHOLD = 2.5;
+
     // ENCODERS
     public static final int LEFT_ENCODER_DIO_CHANNEL_A = 1;
     public static final int LEFT_ENCODER_DIO_CHANNEL_B = 2;
