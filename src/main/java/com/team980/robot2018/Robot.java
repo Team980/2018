@@ -58,7 +58,6 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
         rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
 
-
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         ypr = new double[3];
 
@@ -107,6 +106,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.reset();
 
         imu.setYaw(0, 0); //reset
+
+        shifterSolenoid.set(true); //low
 
         switch (Autonomous.CENTER_CUBE_DROP) { //TODO autoChooser.getSelected()
             case LEFT_SIDE_CUBE_DROP:
@@ -181,7 +182,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
                 if (followDistance < 320) { //Reached target... EXTERMINATE!
                     robotDrive.stopMotor();
-                    state = AutoState.DROP_CUBE;
+                    state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) { //todo consistent
                     robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
                 } else {
@@ -189,7 +190,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                     state = AutoState.BACKUP_TURN_TO_ZERO;
                 }
                 break;
-            case DROP_CUBE: //TODO
+            case DEPOSIT_CUBE: //TODO
                 state = AutoState.FINISHED;
                 break;
             case BACKUP_TURN_TO_ZERO:
@@ -260,7 +261,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             shifterSolenoid.set(true);
         }
 
-        if (dalekMode) {
+        if (dalekMode) { //TODO remove before competition?
             int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
@@ -332,7 +333,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         DALEK_MODE,
         BACKUP_TURN_TO_ZERO,
         BACKUP_DRIVE_FORWARD,
-        DROP_CUBE,
+        DEPOSIT_CUBE,
         FINISHED
     }
 }
