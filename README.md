@@ -1,4 +1,4 @@
-# 2017
+# 2018
 The official 2018 robot code!
 
 You may also be interested in [the coprocessor's code](https://github.com/Team980/2018-Coprocessor/).
@@ -13,19 +13,18 @@ Then generate the project files for your IDE:
 - ```gradlew idea``` (IntelliJ IDEA)
 - ```gradlew eclipse``` (Eclipse)
 
-IntelliJ IDEA has native support for Gradle. Eclipse users should install the [Buildship Gradle plugin for Eclipse](http://projects.eclipse.org/projects/tools.buildship), as the plugin does NOT come with the C++ distribution!
-
-Eclipse users should also DISABLE WPILib if they have it installed.
+IntelliJ IDEA and Eclipse both have native support for Gradle.
 
 ## Building and deploying your code
+- ```gradlew clean``` will clean your build directories
 - ```gradlew build``` will build your Robot Code
 - ```gradlew deploy``` will deploy your built code to the RoboRIO
-These tasks must be run in succession.
+- These tasks must be run in succession.
 
-If you're lazy, just use this command: ```gradlew build deploy```
+If you're lazy, just use this command: ```gradlew clean build deploy```
 
 These tasks are also listed in the Gradle window in IntelliJ IDEA, or the Gradle Tasks window in Eclipse.
-You can even create run configurations to launch these tasks!
+You can even create run configurations to execute these tasks!
 
 ## Pushing to GitHub
 

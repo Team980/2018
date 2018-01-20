@@ -83,7 +83,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     @Override
     public void robotPeriodic() {
-        imu.getYawPitchRoll(ypr);
+        imu.getYawPitchRolll(ypr);
         coprocessor.updateData();
 
         table.getSubTable("IMU").getEntry("Yaw").setNumber(ypr[0]);
