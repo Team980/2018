@@ -1,12 +1,13 @@
 package com.team980.robot2018;
 
 import com.ctre.phoenix.sensors.PigeonIMU;
+import com.team980.robot2018.util.PigeonGyro;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import openrio.powerup.MatchData;
 
 public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms vs about 20ms
@@ -49,19 +50,25 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         leftDrive = new Spark(Parameters.LEFT_DRIVE_PWM_CHANNEL);
         rightDrive = new Spark(Parameters.RIGHT_DRIVE_PWM_CHANNEL);
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
+        robotDrive.setName("Robot Drive");
 
         leftDriveEncoder = new Encoder(Parameters.LEFT_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_ENCODER, CounterBase.EncodingType.k4X);
         leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
         leftDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
+        leftDriveEncoder.setName("Encoders", "Left");
 
         rightDriveEncoder = new Encoder(Parameters.RIGHT_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_ENCODER, CounterBase.EncodingType.k4X);
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
         rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
+        rightDriveEncoder.setName("Encoders", "Right");
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
+        PigeonGyro dashGyro = new PigeonGyro(imu);
+        dashGyro.setName("Dashboard Gyro");
         ypr = new double[3];
 
         shifterSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
+        shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
 
         coprocessor = new Rioduino();
@@ -69,14 +76,15 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table = NetworkTableInstance.getDefault().getTable("ThunderBots");
 
         autoChooser = new SendableChooser<>();
-        autoChooser.addObject("Disabled", Autonomous.DISABLED);
+        autoChooser.addDefault("Disabled", Autonomous.DISABLED);
         autoChooser.addObject("Left Side - Cube Drop", Autonomous.LEFT_SIDE_CUBE_DROP);
         autoChooser.addObject("Right Side - Cube Drop", Autonomous.RIGHT_SIDE_CUBE_DROP);
         autoChooser.addObject("Center - Cube Drop", Autonomous.CENTER_CUBE_DROP);
         autoChooser.addObject("Far Left - Get To Scale", Autonomous.FAR_LEFT_GET_TO_SCALE);
-        SmartDashboard.putData(autoChooser); // TODO this is broken
+        autoChooser.setName("Autonomous Chooser");
+        LiveWindow.add(autoChooser); //This actually works
 
-        table.getEntry("Autonomous Mode").setString("Off");
+        table.getEntry("Autonomous State").setString("");
 
         PowerDistributionPanel pdp = new PowerDistributionPanel(); //TODO voltage safety
     }
@@ -86,15 +94,15 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         imu.getYawPitchRoll(ypr);
         coprocessor.updateData();
 
+        if (autoChooser.getSelected() != null) {
+            table.getEntry("Auto Selected").setString(autoChooser.getSelected().name());
+        } else {
+            table.getEntry("Auto Selected").setString("NULL");
+        }
+
         table.getSubTable("IMU").getEntry("Yaw").setNumber(ypr[0]);
         table.getSubTable("IMU").getEntry("Pitch").setNumber(ypr[1]);
         table.getSubTable("IMU").getEntry("Roll").setNumber(ypr[2]);
-
-        table.getSubTable("Encoder Distance").getEntry("Left").setNumber(leftDriveEncoder.getDistance());
-        table.getSubTable("Encoder Distance").getEntry("Right").setNumber(rightDriveEncoder.getDistance());
-
-        table.getSubTable("Encoder Rate").getEntry("Left").setNumber(leftDriveEncoder.getRate());
-        table.getSubTable("Encoder Rate").getEntry("Right").setNumber(rightDriveEncoder.getRate());
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
@@ -109,7 +117,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         shifterSolenoid.set(true); //low
 
-        switch (Autonomous.CENTER_CUBE_DROP) { //TODO autoChooser.getSelected()
+        switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
                 turnAngle = Parameters.AUTO_LEFT_SIDE_TURN_ANGLE;
                 break;
@@ -134,7 +142,11 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 break;
         }
 
-        state = AutoState.START;
+        if (autoChooser.getSelected() == Autonomous.DISABLED) {
+            state = AutoState.FINISHED;
+        } else {
+            state = AutoState.START;
+        }
     }
 
     @Override
@@ -219,7 +231,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 break;
         }
 
-        table.getEntry("Autonomous Mode").setString(state.name());
+        table.getEntry("Autonomous State").setString(state.name());
     }
 
     @Override
