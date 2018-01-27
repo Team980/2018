@@ -31,7 +31,10 @@ public class Parameters {
     // LIFT SYSTEM
     public static final int LIFT_MOTOR_CAN_ID = 14;
 
-    public static final double LIFT_MOTOR_SPEED = 0.3;
+    public static final double LIFT_MOTOR_MIN_UPWARD_SPEED = 0.3;
+    public static final double LIFT_MOTOR_UPWARD_ACCELERATION = 0.01;
+    public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 0.8;
+    public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.3;
 
     // PROXIMITY SENSORS
     public static final int LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 1;

@@ -2,6 +2,7 @@ package com.team980.robot2018;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.sensors.PigeonIMU;
+import com.team980.robot2018.sensors.LaserRangefinder;
 import com.team980.robot2018.sensors.Rioduino;
 import com.team980.robot2018.util.PigeonGyro;
 import edu.wpi.first.networktables.NetworkTable;
@@ -26,17 +27,20 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private Encoder leftDriveEncoder;
     private Encoder rightDriveEncoder;
 
-    private WPI_TalonSRX liftMotor; //TODO
+    private WPI_TalonSRX liftMotor;
+    private int upwardAccelerationCounter;
 
     private AnalogInput lowerProximitySensor;
     private AnalogInput upperProximitySensor;
-    //private LaserRangefinder rangefinder;
+    private LaserRangefinder rangefinder;
 
     private PigeonIMU imu;
     private double[] ypr;
 
     private DoubleSolenoid shifterSolenoid; //this is for trash panda only!
     private boolean inLowGear;
+
+    private DoubleSolenoid clawSolenoid; //trash panda
 
     private Rioduino coprocessor;
 
@@ -75,7 +79,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         lowerProximitySensor = new AnalogInput(Parameters.LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
         upperProximitySensor = new AnalogInput(Parameters.UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
-        //rangefinder = new LaserRangefinder();
+        rangefinder = new LaserRangefinder();
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
@@ -85,6 +89,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         shifterSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 0, 1);//TODO go back to singular (Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
+
+        clawSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 2, 3); //TODO regular Solenoid
+        clawSolenoid.setName("Pneumatics", "Claw Solenoid");
 
         coprocessor = new Rioduino();
 
@@ -108,7 +115,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     public void robotPeriodic() {
         imu.getYawPitchRoll(ypr);
         coprocessor.updateData();
-        //rangefinder.updateData();
+        rangefinder.updateData();
 
         if (autoChooser.getSelected() != null) {
             table.getEntry("Auto Selected").setString(autoChooser.getSelected().name());
@@ -122,7 +129,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         table.getSubTable("Lift System").getEntry("Lower Proximity Sensor").setBoolean(lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Upper Proximity Sensor").setBoolean(upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
-        //table.getSubTable("Lift System").getEntry("Laser Rangefinder").setBoolean(rangefinder.getDistance());
+        table.getSubTable("Lift System").getEntry("Laser Rangefinder").setNumber(rangefinder.getDistance());
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
@@ -260,6 +267,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.reset();
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
+        clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
     }
 
     @Override
@@ -272,7 +280,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 break;
             case SINGLE_JOYSTICK:
                 teleopOperatorControls(driveStick);
-                robotDrive.arcadeDrive(-driveStick.getY(), driveStick.getX()); //Z axis is improperly calibrated >:(
+                robotDrive.arcadeDrive(driveStick.getY(), driveStick.getX()); //Z axis is improperly calibrated >:(
                 break;
             case GAME_CONTROLLER:
                 teleopOperatorControls(gameController);
@@ -341,11 +349,27 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         }
 
         if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
-            liftMotor.set(-Parameters.LIFT_MOTOR_SPEED);
+            upwardAccelerationCounter++;
+            double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
+            if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
+                liftMotor.set(-speed);
+            } else {
+                liftMotor.set(-Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+            }
         } else if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
-            liftMotor.set(Parameters.LIFT_MOTOR_SPEED);
+            upwardAccelerationCounter = 0;
+            liftMotor.set(Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
         } else {
+            upwardAccelerationCounter = 0;
             liftMotor.set(0);
+        }
+
+        if (js.getRawButtonPressed(7)) {
+            clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+        }
+
+        if (js.getRawButtonPressed(8)) {
+            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
         }
     }
 
