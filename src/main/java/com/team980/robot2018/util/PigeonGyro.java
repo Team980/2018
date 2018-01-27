@@ -4,7 +4,7 @@ import com.ctre.phoenix.sensors.PigeonIMU;
 import edu.wpi.first.wpilibj.GyroBase;
 
 /**
- * Wrapper to interface with the Pigeon IMU as a Gyro
+ * Hack wrapper to interface with the Pigeon IMU as a Gyro
  * Required for Shuffleboard to represent the yaw as a gryo widget
  */
 public class PigeonGyro extends GyroBase {

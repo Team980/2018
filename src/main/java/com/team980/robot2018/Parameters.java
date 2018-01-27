@@ -11,20 +11,33 @@ public class Parameters {
     public static final int GAME_CONTROLLER_JS_ID = 3;
 
     // DRIVE SYSTEM
-    public static final int LEFT_DRIVE_PWM_CHANNEL = 0;
-    public static final int RIGHT_DRIVE_PWM_CHANNEL = 1;
+    public static final int LEFT_FRONT_DRIVE_CAN_ID = 7;
+    public static final int LEFT_BACK_DRIVE_CAN_ID = 10;
+    public static final int RIGHT_FRONT_DRIVE_CAN_ID = 12;
+    public static final int RIGHT_BACK_DRIVE_CAN_ID = 13;
 
     public static final double UPPER_SHIFT_THRESHOLD = 3.25;
     public static final double LOWER_SHIFT_THRESHOLD = 2.5;
 
     // ENCODERS
-    public static final int LEFT_ENCODER_DIO_CHANNEL_A = 1;
-    public static final int LEFT_ENCODER_DIO_CHANNEL_B = 2;
+    public static final int LEFT_ENCODER_DIO_CHANNEL_A = 0;
+    public static final int LEFT_ENCODER_DIO_CHANNEL_B = 1;
     public static final boolean INVERT_LEFT_ENCODER = false;
 
-    public static final int RIGHT_ENCODER_DIO_CHANNEL_A = 4;
-    public static final int RIGHT_ENCODER_DIO_CHANNEL_B = 5;
+    public static final int RIGHT_ENCODER_DIO_CHANNEL_A = 2;
+    public static final int RIGHT_ENCODER_DIO_CHANNEL_B = 3;
     public static final boolean INVERT_RIGHT_ENCODER = true;
+
+    // LIFT SYSTEM
+    public static final int LIFT_MOTOR_CAN_ID = 14;
+
+    public static final double LIFT_MOTOR_SPEED = 0.3;
+
+    // PROXIMITY SENSORS
+    public static final int LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 1;
+    public static final int UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 0;
+
+    public static final double PROXIMITY_SENSOR_THRESHOLD = 2.5;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
@@ -32,6 +45,7 @@ public class Parameters {
     // PNEUMATICS
     public static final int PCM_CAN_ID = 1;
     public static final int SHIFTER_SOLENOID_CHANNEL = 4;
+    public static final int CLAW_SOLENOID_CHANNEL = 5;
 
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;

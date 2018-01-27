@@ -1,6 +1,8 @@
 package com.team980.robot2018;
 
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.sensors.PigeonIMU;
+import com.team980.robot2018.sensors.Rioduino;
 import com.team980.robot2018.util.PigeonGyro;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
@@ -17,17 +19,23 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private Joystick operatorBox;
     private Joystick gameController;
 
-    private Spark leftDrive; //2017 robot uses Sparks
-    private Spark rightDrive; //We'll be testing on it until we get our drive base - with Victor SPXes
+    private SpeedControllerGroup leftDrive;
+    private SpeedControllerGroup rightDrive;
     private DifferentialDrive robotDrive;
 
     private Encoder leftDriveEncoder;
     private Encoder rightDriveEncoder;
 
+    private WPI_TalonSRX liftMotor; //TODO
+
+    private AnalogInput lowerProximitySensor;
+    private AnalogInput upperProximitySensor;
+    //private LaserRangefinder rangefinder;
+
     private PigeonIMU imu;
     private double[] ypr;
 
-    private Solenoid shifterSolenoid;
+    private DoubleSolenoid shifterSolenoid; //this is for trash panda only!
     private boolean inLowGear;
 
     private Rioduino coprocessor;
@@ -47,8 +55,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         operatorBox = new Joystick(Parameters.OPERATOR_BOX_JS_ID);
         gameController = new Joystick(Parameters.GAME_CONTROLLER_JS_ID);
 
-        leftDrive = new Spark(Parameters.LEFT_DRIVE_PWM_CHANNEL);
-        rightDrive = new Spark(Parameters.RIGHT_DRIVE_PWM_CHANNEL);
+        leftDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.LEFT_FRONT_DRIVE_CAN_ID), new WPI_TalonSRX(Parameters.LEFT_BACK_DRIVE_CAN_ID));
+        rightDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.RIGHT_FRONT_DRIVE_CAN_ID), new WPI_TalonSRX(Parameters.RIGHT_BACK_DRIVE_CAN_ID));
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
         robotDrive.setName("Robot Drive");
 
@@ -62,12 +70,19 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
         rightDriveEncoder.setName("Encoders", "Right");
 
+        liftMotor = new WPI_TalonSRX(Parameters.LIFT_MOTOR_CAN_ID);
+        liftMotor.setName("Lift Motor");
+
+        lowerProximitySensor = new AnalogInput(Parameters.LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
+        upperProximitySensor = new AnalogInput(Parameters.UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
+        //rangefinder = new LaserRangefinder();
+
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
         dashGyro.setName("Dashboard Gyro");
         ypr = new double[3];
 
-        shifterSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
+        shifterSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 0, 1);//TODO go back to singular (Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
 
@@ -86,13 +101,14 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         table.getEntry("Autonomous State").setString("");
 
-        PowerDistributionPanel pdp = new PowerDistributionPanel(); //TODO voltage safety
+        PowerDistributionPanel pdp = new PowerDistributionPanel(); //TODO voltage safety, fix Shuffleboard readings
     }
 
     @Override
     public void robotPeriodic() {
         imu.getYawPitchRoll(ypr);
         coprocessor.updateData();
+        //rangefinder.updateData();
 
         if (autoChooser.getSelected() != null) {
             table.getEntry("Auto Selected").setString(autoChooser.getSelected().name());
@@ -103,6 +119,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table.getSubTable("IMU").getEntry("Yaw").setNumber(ypr[0]);
         table.getSubTable("IMU").getEntry("Pitch").setNumber(ypr[1]);
         table.getSubTable("IMU").getEntry("Roll").setNumber(ypr[2]);
+
+        table.getSubTable("Lift System").getEntry("Lower Proximity Sensor").setBoolean(lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
+        table.getSubTable("Lift System").getEntry("Upper Proximity Sensor").setBoolean(upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
+        //table.getSubTable("Lift System").getEntry("Laser Rangefinder").setBoolean(rangefinder.getDistance());
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
@@ -115,7 +135,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         imu.setYaw(0, 0); //reset
 
-        shifterSolenoid.set(true); //low
+        shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
@@ -239,7 +259,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
 
-        shifterSolenoid.set(true); //low
+        shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
     }
 
     @Override
@@ -260,18 +280,16 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 break;
         }
 
-        // AUTOMATIC SHIFTING - TODO FIX LEFT ENCODER
-        if (/*leftDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
-                &&*/ rightDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
-                && inLowGear) {
+        // AUTOMATIC SHIFTING
+        /*if (leftDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
+                && rightDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
             inLowGear = false;
-            shifterSolenoid.set(false);
-        } else if (/*leftDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
-                &&*/ rightDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
-                && !inLowGear) {
+            shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
+        } else if (leftDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
+                && rightDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
             inLowGear = true;
-            shifterSolenoid.set(true);
-        }
+            shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+        }*/
 
         if (dalekMode) { //TODO remove before competition?
             int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
@@ -312,20 +330,29 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             dalekMode = false;
         }
 
-        /*if (js.getRawButtonPressed(3)) {
-            shifterSolenoid.set(true); //low
+        if (js.getRawButtonPressed(3)) {
+            shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
             inLowGear = true;
         }
 
         if (js.getRawButtonPressed(4)) {
-            shifterSolenoid.set(false); //high
+            shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //high
             inLowGear = false;
-        }*/
+        }
+
+        if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+            liftMotor.set(-Parameters.LIFT_MOTOR_SPEED);
+        } else if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+            liftMotor.set(Parameters.LIFT_MOTOR_SPEED);
+        } else {
+            liftMotor.set(0);
+        }
     }
 
     @Override
     public void disabledInit() {
         robotDrive.stopMotor();
+        liftMotor.stopMotor();
 
         dalekMode = false;
     }

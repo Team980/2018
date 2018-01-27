@@ -1,4 +1,4 @@
-package com.team980.robot2018;
+package com.team980.robot2018.sensors;
 
 import edu.wpi.first.wpilibj.I2C;
 
