@@ -51,6 +51,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private AutoState state;
 
     private boolean dalekMode = false;
+    private PowerDistributionPanel pdp;
+    private double lifterCurrent;
+    private boolean topReached;
+    private boolean bottomReached;
 
     @Override
     public void robotInit() {
@@ -108,7 +112,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         table.getEntry("Autonomous State").setString("");
 
-        PowerDistributionPanel pdp = new PowerDistributionPanel(); //TODO voltage safety, fix Shuffleboard readings
+        pdp = new PowerDistributionPanel(); //TODO voltage safety, fix Shuffleboard readings
+        topReached = false;
+        bottomReached = false;
     }
 
     @Override
@@ -347,17 +353,23 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //high
             inLowGear = false;
         }
+        lifterCurrent = pdp.getCurrent(11);
+        topReached = upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD;
+        bottomReached = lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD;
+        
 
-        if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+        if (js.getRawButton(5) && !topReached && lifterCurrent < 15.0) {
             upwardAccelerationCounter++;
+            bottomReached = false;
             double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
             if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
                 liftMotor.set(-speed);
             } else {
                 liftMotor.set(-Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
             }
-        } else if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+        } else if (js.getRawButton(6) && !bottomReached && lifterCurrent <15.0) {
             upwardAccelerationCounter = 0;
+            topReached = false;
             liftMotor.set(Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
         } else {
             upwardAccelerationCounter = 0;
@@ -368,8 +380,13 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
         }
 
-        if (js.getRawButtonPressed(8)) {
+        else if (js.getRawButtonPressed(8)) {
             clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        }
+        
+        else{
+            clawSolenoid.set(DoubleSolenoid.Value.kOff);
+
         }
     }
 

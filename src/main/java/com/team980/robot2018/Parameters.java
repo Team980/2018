@@ -33,7 +33,7 @@ public class Parameters {
 
     public static final double LIFT_MOTOR_MIN_UPWARD_SPEED = 0.3;
     public static final double LIFT_MOTOR_UPWARD_ACCELERATION = 0.01;
-    public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 0.8;
+    public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 1.0;
     public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.3;
 
     // PROXIMITY SENSORS
