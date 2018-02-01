@@ -33,8 +33,12 @@ public class Parameters {
 
     public static final double LIFT_MOTOR_MIN_UPWARD_SPEED = 0.3;
     public static final double LIFT_MOTOR_UPWARD_ACCELERATION = 0.01;
+
     public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 1.0;
-    public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.3;
+    public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.5;
+
+    public static final int LIFT_MOTOR_PDP_CHANNEL = 11;
+    public static final double LIFT_MOTOR_CURRENT_THRESHOLD = 20.0;
 
     // PROXIMITY SENSORS
     public static final int LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 1;
@@ -48,7 +52,7 @@ public class Parameters {
     // PNEUMATICS
     public static final int PCM_CAN_ID = 1;
     public static final int SHIFTER_SOLENOID_CHANNEL = 4;
-    public static final int CLAW_SOLENOID_CHANNEL = 5;
+    public static final int CLAW_SOLENOID_CHANNEL = 3;
 
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;

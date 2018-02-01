@@ -9,7 +9,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-//import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import openrio.powerup.MatchData;
 
@@ -37,12 +37,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private PigeonIMU imu;
     private double[] ypr;
 
-    private DoubleSolenoid shifterSolenoid; //this is for trash panda only!
-    private boolean inLowGear;
+    private DoubleSolenoid shifterSolenoid;
 
-    //private DoubleSolenoid clawSolenoid; //trash panda
-    private Solenoid clawOpen;
-    private Solenoid clawClose;
+    private DoubleSolenoid clawSolenoid;
 
     private Rioduino coprocessor;
 
@@ -52,11 +49,11 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private int turnAngle;
     private AutoState state;
 
+    private boolean inLowGear = true;
+    private LiftState liftState = LiftState.STOPPED;
     private boolean dalekMode = false;
+
     private PowerDistributionPanel pdp;
-    private double lifterCurrent;
-    private boolean topReached;
-    private boolean bottomReached;
 
     @Override
     public void robotInit() {
@@ -96,10 +93,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
 
-        //clawSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 2, 3); //TODO regular Solenoid
-        //clawSolenoid.setName("Pneumatics", "Claw Solenoid");
-        clawOpen = new Solenoid(Parameters.PCM_CAN_ID, 2);
-        clawClose = new Solenoid(Parameters.PCM_CAN_ID, 3);
+        clawSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 2, 3);
+        clawSolenoid.setName("Pneumatics", "Claw Solenoid");
 
         coprocessor = new Rioduino();
 
@@ -112,13 +107,13 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         autoChooser.addObject("Center - Cube Drop", Autonomous.CENTER_CUBE_DROP);
         autoChooser.addObject("Far Left - Get To Scale", Autonomous.FAR_LEFT_GET_TO_SCALE);
         autoChooser.setName("Autonomous Chooser");
-       // LiveWindow.add(autoChooser); //This actually works
+        LiveWindow.add(autoChooser); //This actually works
 
         table.getEntry("Autonomous State").setString("");
 
-        pdp = new PowerDistributionPanel(); //TODO voltage safety, fix Shuffleboard readings
-        topReached = false;
-        bottomReached = false;
+        pdp = new PowerDistributionPanel(); //TODO fix Shuffleboard readings
+        pdp.clearStickyFaults();
+        pdp.resetTotalEnergy();
     }
 
     @Override
@@ -140,6 +135,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table.getSubTable("Lift System").getEntry("Lower Proximity Sensor").setBoolean(lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Upper Proximity Sensor").setBoolean(upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Laser Rangefinder").setNumber(rangefinder.getDistance());
+        table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL));
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
@@ -277,7 +273,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.reset();
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
-        //clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
     }
 
     @Override
@@ -308,6 +304,26 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             inLowGear = true;
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
         }*/
+
+        // LIFT SYSTEM
+        if (liftState == LiftState.UP && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
+                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+            upwardAccelerationCounter++;
+            double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
+            if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
+                liftMotor.set(speed);
+            } else {
+                liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+            }
+        } else if (liftState == LiftState.DOWN && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
+                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+            upwardAccelerationCounter = 0;
+            liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
+        } else {
+            liftState = LiftState.STOPPED;
+            upwardAccelerationCounter = 0;
+            liftMotor.set(0);
+        }
 
         if (dalekMode) { //TODO remove before competition?
             int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
@@ -357,53 +373,22 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //high
             inLowGear = false;
         }
-        lifterCurrent = pdp.getCurrent(11);
-        topReached = upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD;
-        bottomReached = lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD;
-        
 
-        if (js.getRawButton(5) && !topReached && lifterCurrent < 15.0) {
-            upwardAccelerationCounter++;
-            bottomReached = false;
-            double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
-            if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
-                liftMotor.set(-speed);
-            } else {
-                liftMotor.set(-Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
-            }
-        } else if (js.getRawButton(6) && !bottomReached && lifterCurrent <20.0) {
-            upwardAccelerationCounter = 0;
-            topReached = false;
-            liftMotor.set(Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
-        } else {
-            upwardAccelerationCounter = 0;
-            liftMotor.set(0);
+        if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+            liftState = LiftState.UP;
+        }
+
+        if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD ) {
+            liftState = LiftState.DOWN;
         }
 
         if (js.getRawButtonPressed(7)) {
-            //clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
-        	//clawClose.set(true);
-        	clawOpen.set(false);
+        	clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
         }
 
         if (js.getRawButtonPressed(8)) {
-            //clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
-        	clawOpen.set(true);
-        	//clawClose.set(false);
-            /*try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-            //clawSolenoid.set(DoubleSolenoid.Value.kOff);
-            clawClose.set(true);*/
+        	clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
         }
-        
-        /*else{
-            clawSolenoid.set(DoubleSolenoid.Value.kOff);
-
-        }*/
     }
 
     @Override
@@ -431,5 +416,11 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         BACKUP_DRIVE_FORWARD,
         DEPOSIT_CUBE,
         FINISHED
+    }
+
+    public enum LiftState {
+        UP,
+        DOWN,
+        STOPPED
     }
 }

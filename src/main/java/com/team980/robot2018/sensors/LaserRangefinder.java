@@ -51,23 +51,16 @@ public class LaserRangefinder {
             send(new byte[] {0x08});
 
             byte[] data = receive(2);
-            distance = (data[0] << 8) + data[1]; //Fit the two stored bytes into the 16bit int in the correct order.
-
-            System.out.println("A: " + data[1]);
-            System.out.println("B: " + data[2]);
-            System.out.println("C: " + distance);
+            distance = (data[1] << 8) + data[0]; //Fit the two stored bytes into the 16bit long in the correct order.
 
             //Check if our Data is Valid
-            if (getBit(data[0], 5) == 0 && getBit(data[0], 6) == 0 && getBit(data[0], 7) == 1) {
+            if (getBit(data[1], 5) == 0 && getBit(data[1], 6) == 0 && getBit(data[1], 7) == 1) {
                 //Mask off and Shift off bits 13:15 and 0:1 respectively
                 distance = distance & BIT_MASK;
-                System.out.println("D: " + distance);
                 distance = distance >> 2;
             } else {
                 distance = -1;
             }
-
-            System.out.println("E: " + distance);
         }
     }
 
@@ -80,13 +73,13 @@ public class LaserRangefinder {
     }
 
     private void send(byte[] out) {
-        sensor.transaction(out, out.length, new byte[] {}, 0);
+        sensor.writeBulk(out, out.length);
     }
 
     private byte[] receive(int length) {
-        byte[] in = new byte[length];
-        sensor.transaction(new byte[] {}, 0, in, in.length);
-        return in;
+        byte[] buffer = new byte[length];
+        sensor.readOnly(buffer, length);
+        return buffer;
     }
 
     private byte getBit(byte b, int position) {
