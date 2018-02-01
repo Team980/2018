@@ -9,7 +9,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.livewindow.LiveWindow;
+//import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import openrio.powerup.MatchData;
 
@@ -40,7 +40,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private DoubleSolenoid shifterSolenoid; //this is for trash panda only!
     private boolean inLowGear;
 
-    private DoubleSolenoid clawSolenoid; //trash panda
+    //private DoubleSolenoid clawSolenoid; //trash panda
+    private Solenoid clawOpen;
+    private Solenoid clawClose;
 
     private Rioduino coprocessor;
 
@@ -94,8 +96,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
 
-        clawSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 2, 3); //TODO regular Solenoid
-        clawSolenoid.setName("Pneumatics", "Claw Solenoid");
+        //clawSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 2, 3); //TODO regular Solenoid
+        //clawSolenoid.setName("Pneumatics", "Claw Solenoid");
+        clawOpen = new Solenoid(Parameters.PCM_CAN_ID, 2);
+        clawClose = new Solenoid(Parameters.PCM_CAN_ID, 3);
 
         coprocessor = new Rioduino();
 
@@ -108,7 +112,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         autoChooser.addObject("Center - Cube Drop", Autonomous.CENTER_CUBE_DROP);
         autoChooser.addObject("Far Left - Get To Scale", Autonomous.FAR_LEFT_GET_TO_SCALE);
         autoChooser.setName("Autonomous Chooser");
-        LiveWindow.add(autoChooser); //This actually works
+       // LiveWindow.add(autoChooser); //This actually works
 
         table.getEntry("Autonomous State").setString("");
 
@@ -273,7 +277,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder.reset();
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
-        clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        //clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
     }
 
     @Override
@@ -367,7 +371,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             } else {
                 liftMotor.set(-Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
             }
-        } else if (js.getRawButton(6) && !bottomReached && lifterCurrent <15.0) {
+        } else if (js.getRawButton(6) && !bottomReached && lifterCurrent <20.0) {
             upwardAccelerationCounter = 0;
             topReached = false;
             liftMotor.set(Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
@@ -377,17 +381,29 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         }
 
         if (js.getRawButtonPressed(7)) {
-            clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+            //clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+        	//clawClose.set(true);
+        	clawOpen.set(false);
         }
 
-        else if (js.getRawButtonPressed(8)) {
-            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        if (js.getRawButtonPressed(8)) {
+            //clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        	clawOpen.set(true);
+        	//clawClose.set(false);
+            /*try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+            //clawSolenoid.set(DoubleSolenoid.Value.kOff);
+            clawClose.set(true);*/
         }
         
-        else{
+        /*else{
             clawSolenoid.set(DoubleSolenoid.Value.kOff);
 
-        }
+        }*/
     }
 
     @Override
