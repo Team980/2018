@@ -17,15 +17,14 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     private Joystick driveStick;
     private Joystick driveWheel;
-    private Joystick operatorBox;
-    private Joystick gameController;
+    private Joystick operatorController;
 
     private SpeedControllerGroup leftDrive;
     private SpeedControllerGroup rightDrive;
     private DifferentialDrive robotDrive;
 
-    private Encoder leftDriveEncoder;
-    private Encoder rightDriveEncoder;
+    //private Encoder leftDriveEncoder;
+    //private Encoder rightDriveEncoder;
 
     private WPI_TalonSRX liftMotor;
     private int upwardAccelerationCounter;
@@ -55,19 +54,22 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     private PowerDistributionPanel pdp;
 
+    private DigitalOutput dalekSoundBox; //TODO TRASH PANDA ONLY
+
     @Override
     public void robotInit() {
         driveStick = new Joystick(Parameters.DRIVE_STICK_JS_ID);
         driveWheel = new Joystick(Parameters.DRIVE_WHEEL_JS_ID);
-        operatorBox = new Joystick(Parameters.OPERATOR_BOX_JS_ID);
-        gameController = new Joystick(Parameters.GAME_CONTROLLER_JS_ID);
+        operatorController = new Joystick(Parameters.OPERATOR_CONTROLLER_JS_ID);
 
         leftDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.LEFT_FRONT_DRIVE_CAN_ID), new WPI_TalonSRX(Parameters.LEFT_BACK_DRIVE_CAN_ID));
+        leftDrive.setInverted(true);
         rightDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.RIGHT_FRONT_DRIVE_CAN_ID), new WPI_TalonSRX(Parameters.RIGHT_BACK_DRIVE_CAN_ID));
+        rightDrive.setInverted(true);
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
         robotDrive.setName("Robot Drive");
 
-        leftDriveEncoder = new Encoder(Parameters.LEFT_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_ENCODER, CounterBase.EncodingType.k4X);
+        /*leftDriveEncoder = new Encoder(Parameters.LEFT_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_ENCODER, CounterBase.EncodingType.k4X);
         leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
         leftDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
         leftDriveEncoder.setName("Encoders", "Left");
@@ -75,7 +77,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         rightDriveEncoder = new Encoder(Parameters.RIGHT_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_ENCODER, CounterBase.EncodingType.k4X);
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
         rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
-        rightDriveEncoder.setName("Encoders", "Right");
+        rightDriveEncoder.setName("Encoders", "Right");*/
 
         liftMotor = new WPI_TalonSRX(Parameters.LIFT_MOTOR_CAN_ID);
         liftMotor.setName("Lift Motor");
@@ -114,6 +116,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         pdp = new PowerDistributionPanel(); //TODO fix Shuffleboard readings
         pdp.clearStickyFaults();
         pdp.resetTotalEnergy();
+
+        dalekSoundBox = new DigitalOutput(4);
+        dalekSoundBox.set(false);
     }
 
     @Override
@@ -143,12 +148,13 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     @Override
     public void autonomousInit() {
-        leftDriveEncoder.reset();
-        rightDriveEncoder.reset();
+        //leftDriveEncoder.reset();
+        //rightDriveEncoder.reset();
 
         imu.setYaw(0, 0); //reset
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
+        clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
@@ -185,41 +191,55 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     @Override
     public void autonomousPeriodic() {
         switch (state) {
-            case START: //TODO lift cube at same time
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_STARTING_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_STARTING_DISTANCE) {
+            case START:
+                if (coprocessor.getRangedDistance() > Parameters.AUTO_STARTING_DISTANCE) {
                     robotDrive.stopMotor();
-                    state = AutoState.TURN_TO_ANGLE;
+                    state = AutoState.TURN_TO_ANGLE_AND_LIFT;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                    liftState = LiftState.UP;
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
-            case TURN_TO_ANGLE:
+            case TURN_TO_ANGLE_AND_LIFT:
+                if (liftState == LiftState.UP && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
+                        && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+                    upwardAccelerationCounter++;
+                    double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
+                    if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
+                        liftMotor.set(speed);
+                    } else {
+                        liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+                    }
+                }
+
                 double turnSpeed = (turnAngle - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
                 if (Math.abs(turnAngle - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
-                    robotDrive.arcadeDrive(0, -turnSpeed, false);
-                } else {
+                    robotDrive.arcadeDrive(0, turnSpeed, false);
+                } else if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
                     robotDrive.stopMotor();
-                    leftDriveEncoder.reset();
-                    rightDriveEncoder.reset();
+
+                    liftMotor.set(0);
+                    liftState = LiftState.STOPPED;
+
                     state = AutoState.MOVE_TO_POSITION;
                 }
                 break;
             case MOVE_TO_POSITION:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_POSITIONING_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_POSITIONING_DISTANCE) {
+                if (coprocessor.getRangedDistance() > Parameters.AUTO_POSITIONING_DISTANCE) {
                     robotDrive.stopMotor();
                     state = AutoState.DALEK_MODE;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
             case DALEK_MODE: // SEEK - LOCATE - DESTROY!
+                dalekSoundBox.pulse(5);
+
                 int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
-                int followDistance = coprocessor.getRangedDistance();
+                int followDistance = 118 - coprocessor.getRangedDistance(); //back of robot
                 double followSpeed = ((double) followDistance) / 1500;
                 if (Math.abs(followSpeed) > Parameters.AUTO_MAX_SPEED) {
                     followSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, followSpeed);
@@ -229,34 +249,34 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                     robotDrive.stopMotor();
                     state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) { //todo consistent
-                    robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
+                    robotDrive.arcadeDrive(-followSpeed, turnSpeed, false);
                 } else {
                     robotDrive.stopMotor();
                     state = AutoState.BACKUP_TURN_TO_ZERO;
                 }
                 break;
-            case DEPOSIT_CUBE: //TODO
-                state = AutoState.FINISHED;
+            case DEPOSIT_CUBE:
+                if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+                    clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+                    state = AutoState.FINISHED;
+                }
                 break;
             case BACKUP_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
                 if (Math.abs(0 - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
-                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                    robotDrive.arcadeDrive(0, turnSpeed, false);
                 } else {
                     robotDrive.stopMotor();
-                    leftDriveEncoder.reset();
-                    rightDriveEncoder.reset();
                     state = AutoState.BACKUP_DRIVE_FORWARD;
                 }
                 break;
             case BACKUP_DRIVE_FORWARD:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_BACKUP_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_BACKUP_DISTANCE) {
+                if (coprocessor.getRangedDistance() > Parameters.AUTO_BACKUP_DISTANCE) {
                     robotDrive.stopMotor();
                     state = AutoState.FINISHED;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
             case FINISHED:
@@ -269,8 +289,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     @Override
     public void teleopInit() {
-        leftDriveEncoder.reset();
-        rightDriveEncoder.reset();
+        //leftDriveEncoder.reset();
+        //rightDriveEncoder.reset();
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
@@ -281,16 +301,16 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         switch (Parameters.CONTROL_MODE) {
             case COMPETITION_DRIVER_STATION:
-                teleopOperatorControls(operatorBox);
-                robotDrive.arcadeDrive(driveStick.getY(), driveWheel.getX());
+                teleopOperatorControls(operatorController);
+                robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
                 break;
             case SINGLE_JOYSTICK:
                 teleopOperatorControls(driveStick);
-                robotDrive.arcadeDrive(driveStick.getY(), driveStick.getX()); //Z axis is improperly calibrated >:(
+                robotDrive.arcadeDrive(-driveStick.getY(), driveStick.getX()); //Z axis is improperly calibrated >:(
                 break;
             case GAME_CONTROLLER:
-                teleopOperatorControls(gameController);
-                robotDrive.arcadeDrive((gameController.getRawAxis(3) - gameController.getRawAxis(2)), -gameController.getRawAxis(0));
+                teleopOperatorControls(operatorController);
+                robotDrive.arcadeDrive(-(operatorController.getRawAxis(3) - operatorController.getRawAxis(2)), operatorController.getRawAxis(0));
                 break;
         }
 
@@ -326,10 +346,12 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         }
 
         if (dalekMode) { //TODO remove before competition?
+            dalekSoundBox.pulse(5);
+
             int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
-            int followDistance = coprocessor.getRangedDistance();
+            int followDistance = 118 - coprocessor.getRangedDistance(); //back of robot
             double followSpeed = ((double) followDistance) / 1500;
             if (Math.abs(followSpeed) > 0.6) {
                 followSpeed = Math.copySign(0.6, followSpeed);
@@ -338,7 +360,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             if (/*Math.abs(visionTargetOffset) > 20 && Math.abs(followDistance) > 300 &&*/
                     coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) {
                 System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
-                robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
+                robotDrive.arcadeDrive(-followSpeed, turnSpeed, false);
             } else {
                 System.out.println("No target found, Stopping");
                 robotDrive.stopMotor();
@@ -378,16 +400,16 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             liftState = LiftState.UP;
         }
 
-        if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD ) {
+        if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
             liftState = LiftState.DOWN;
         }
 
         if (js.getRawButtonPressed(7)) {
-        	clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+            clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
         }
 
         if (js.getRawButtonPressed(8)) {
-        	clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
         }
     }
 
@@ -409,7 +431,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     public enum AutoState {
         START,
-        TURN_TO_ANGLE,
+        TURN_TO_ANGLE_AND_LIFT,
         MOVE_TO_POSITION,
         DALEK_MODE,
         BACKUP_TURN_TO_ZERO,

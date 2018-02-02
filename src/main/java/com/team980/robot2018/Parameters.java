@@ -3,12 +3,11 @@ package com.team980.robot2018;
 public class Parameters {
 
     // INPUT
-    public static final ControlMode CONTROL_MODE = ControlMode.SINGLE_JOYSTICK;
+    public static final ControlMode CONTROL_MODE = ControlMode.COMPETITION_DRIVER_STATION;
 
     public static final int DRIVE_STICK_JS_ID = 0;
     public static final int DRIVE_WHEEL_JS_ID = 1;
-    public static final int OPERATOR_BOX_JS_ID = 2;
-    public static final int GAME_CONTROLLER_JS_ID = 3;
+    public static final int OPERATOR_CONTROLLER_JS_ID = 2;
 
     // DRIVE SYSTEM
     public static final int LEFT_FRONT_DRIVE_CAN_ID = 7;
@@ -57,9 +56,9 @@ public class Parameters {
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;
 
-    public static final double AUTO_STARTING_DISTANCE = 1.0;
-    public static final double AUTO_POSITIONING_DISTANCE = 5.0;
-    public static final double AUTO_BACKUP_DISTANCE = 10.0;
+    public static final double AUTO_STARTING_DISTANCE = 10;
+    public static final double AUTO_POSITIONING_DISTANCE = 50;
+    public static final double AUTO_BACKUP_DISTANCE = 100;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
