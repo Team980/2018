@@ -21,7 +21,7 @@ public class PigeonGyro extends GyroBase {
 
     @Override
     public void calibrate() {
-        backingImu.setYawToCompass(0);
+        backingImu.setYaw(0, 0);
     }
 
     @Override

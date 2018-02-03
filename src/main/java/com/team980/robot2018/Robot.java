@@ -118,7 +118,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         pdp.resetTotalEnergy();
 
         dalekSoundBox = new DigitalOutput(4);
-        dalekSoundBox.set(false);
+        dalekSoundBox.set(true);
     }
 
     @Override
@@ -151,7 +151,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         //leftDriveEncoder.reset();
         //rightDriveEncoder.reset();
 
-        imu.setYaw(0, 0); //reset
+        imu.setYaw(0, 0);
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
@@ -234,12 +234,12 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 }
                 break;
             case DALEK_MODE: // SEEK - LOCATE - DESTROY!
-                dalekSoundBox.pulse(5);
+                dalekSoundBox.set(false);
 
                 int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
-                int followDistance = 118 - coprocessor.getRangedDistance(); //back of robot
+                int followDistance = coprocessor.getRangedDistance();
                 double followSpeed = ((double) followDistance) / 1500;
                 if (Math.abs(followSpeed) > Parameters.AUTO_MAX_SPEED) {
                     followSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, followSpeed);
@@ -249,13 +249,15 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                     robotDrive.stopMotor();
                     state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) { //todo consistent
-                    robotDrive.arcadeDrive(-followSpeed, turnSpeed, false);
+                    robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
                 } else {
                     robotDrive.stopMotor();
                     state = AutoState.BACKUP_TURN_TO_ZERO;
                 }
                 break;
             case DEPOSIT_CUBE:
+                dalekSoundBox.set(true);
+
                 if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
                     clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
                     state = AutoState.FINISHED;
@@ -292,8 +294,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         //leftDriveEncoder.reset();
         //rightDriveEncoder.reset();
 
+        imu.setYaw(0, 0);
+
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
-        clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
     }
 
     @Override
@@ -346,12 +350,12 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         }
 
         if (dalekMode) { //TODO remove before competition?
-            dalekSoundBox.pulse(5);
+            dalekSoundBox.set(false);
 
             int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
-            int followDistance = 118 - coprocessor.getRangedDistance(); //back of robot
+            int followDistance = coprocessor.getRangedDistance();
             double followSpeed = ((double) followDistance) / 1500;
             if (Math.abs(followSpeed) > 0.6) {
                 followSpeed = Math.copySign(0.6, followSpeed);
@@ -360,12 +364,14 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             if (/*Math.abs(visionTargetOffset) > 20 && Math.abs(followDistance) > 300 &&*/
                     coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) {
                 System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
-                robotDrive.arcadeDrive(-followSpeed, turnSpeed, false);
+                robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
             } else {
                 System.out.println("No target found, Stopping");
                 robotDrive.stopMotor();
                 dalekMode = false;
             }
+        } else {
+            dalekSoundBox.set(true);
         }
     }
 
@@ -410,6 +416,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         if (js.getRawButtonPressed(8)) {
             clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        }
+
+        if (js.getRawButtonPressed(9)) {
+            imu.setYaw(0, 0);
         }
     }
 

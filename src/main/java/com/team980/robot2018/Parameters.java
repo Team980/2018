@@ -56,9 +56,9 @@ public class Parameters {
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;
 
-    public static final double AUTO_STARTING_DISTANCE = 10;
-    public static final double AUTO_POSITIONING_DISTANCE = 50;
-    public static final double AUTO_BACKUP_DISTANCE = 100;
+    public static final double AUTO_STARTING_DISTANCE = 1.0;
+    public static final double AUTO_POSITIONING_DISTANCE = 5.0;
+    public static final double AUTO_BACKUP_DISTANCE = 10.0;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
