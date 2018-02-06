@@ -402,6 +402,14 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             inLowGear = false;
         }
 
+        if (js.getRawAxis(5) < -0.2) {
+            liftState = LiftState.UP;
+        } else if (js.getRawAxis(5) > 0.2) {
+            liftState = LiftState.DOWN;
+        } else {
+            liftState = LiftState.STOPPED;
+        }
+
         if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
             liftState = LiftState.UP;
         }
