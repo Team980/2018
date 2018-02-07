@@ -12,12 +12,15 @@ public class Rioduino {
 
     // LOCAL PARAMETERS
     private static final int DEVICE_ADDRESS = 4;
-    private static final int BUFFER_SIZE = 8;
+    private static final int BUFFER_SIZE = 20;
 
     private I2C arduino;
 
     // Schema
     private int visionTargetCoord;
+    private int powerCubeWidth;
+    private int powerCubeHeight;
+    private int powerCubeCoord;
     private int rangedDistance;
 
     public Rioduino() {
@@ -31,7 +34,10 @@ public class Rioduino {
         arduino.readOnly(buffer, BUFFER_SIZE);
 
         visionTargetCoord = buffer.getInt(0);
-        rangedDistance = buffer.getInt(4);
+        powerCubeWidth = buffer.getInt(4);
+        powerCubeHeight = buffer.getInt(8);
+        powerCubeCoord = buffer.getInt(12);
+        rangedDistance = buffer.getInt(16);
     }
 
     /**
@@ -41,6 +47,33 @@ public class Rioduino {
      */
     public int getVisionTargetCoord() {
         return visionTargetCoord;
+    }
+
+    /**
+     * The width of the largest (i.e. closest) detected power cube
+     * This should be checked to make sure it's a single cube
+     * 0 if no cubes are detected
+     */
+    public int getPowerCubeWidth() {
+        return powerCubeWidth;
+    }
+
+    /**
+     * The height of the largest (i.e. closest) detected power cube
+     * This should be checked to make sure it's a single cube
+     * 0 if no cubes are detected
+     */
+    public int getPowerCubeHeight() {
+        return powerCubeHeight;
+    }
+
+    /**
+     * The center x-coordinate of the largest (i.e. closest) detected power cube
+     * Ranges from zero to 319
+     * -1 if no cubes are detected
+     */
+    public int getPowerCubeCoord() {
+        return powerCubeCoord;
     }
 
     /**

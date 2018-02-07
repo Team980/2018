@@ -143,6 +143,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL));
 
         table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
+        table.getSubTable("Coprocessor").getEntry("Power Cube Width").setNumber(coprocessor.getPowerCubeWidth());
+        table.getSubTable("Coprocessor").getEntry("Power Cube Height").setNumber(coprocessor.getPowerCubeHeight());
+        table.getSubTable("Coprocessor").getEntry("Power Cube Coord").setNumber(coprocessor.getPowerCubeCoord());
         table.getSubTable("Coprocessor").getEntry("Ranged Distance").setNumber(coprocessor.getRangedDistance());
     }
 
@@ -349,10 +352,11 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             liftMotor.set(0);
         }
 
+        //New Power Cube Eating Mode - Azorbaloff!
         if (dalekMode) { //TODO remove before competition?
             dalekSoundBox.set(false);
 
-            int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
+            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getRangedDistance();
@@ -361,8 +365,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 followSpeed = Math.copySign(0.6, followSpeed);
             }
 
+            System.out.println(coprocessor.getPowerCubeCoord());
             if (/*Math.abs(visionTargetOffset) > 20 && Math.abs(followDistance) > 300 &&*/
-                    coprocessor.getVisionTargetCoord() > 0 && coprocessor.getVisionTargetCoord() < 400) {
+                    coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
                 System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
                 robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
             } else {
