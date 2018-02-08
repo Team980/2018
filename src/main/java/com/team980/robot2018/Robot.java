@@ -42,6 +42,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     private Rioduino coprocessor;
 
+    private Relay dalekEye;
+
     private NetworkTable table;
 
     private SendableChooser<Autonomous> autoChooser;
@@ -50,11 +52,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     private boolean inLowGear = true;
     private LiftState liftState = LiftState.STOPPED;
-    private boolean dalekMode = false;
+    private boolean pacManMode = false;
 
     private PowerDistributionPanel pdp;
-
-    private DigitalOutput dalekSoundBox; //TODO TRASH PANDA ONLY
 
     @Override
     public void robotInit() {
@@ -100,6 +100,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         coprocessor = new Rioduino();
 
+        dalekEye = new Relay(Parameters.DALEK_EYE_RELAY_CHANNEL);
+        dalekEye.setName("Dalek Eye");
+
         table = NetworkTableInstance.getDefault().getTable("ThunderBots");
 
         autoChooser = new SendableChooser<>();
@@ -116,9 +119,6 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         pdp = new PowerDistributionPanel(); //TODO fix Shuffleboard readings
         pdp.clearStickyFaults();
         pdp.resetTotalEnergy();
-
-        dalekSoundBox = new DigitalOutput(4);
-        dalekSoundBox.set(true);
     }
 
     @Override
@@ -158,6 +158,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+
+        dalekEye.set(Relay.Value.kForward);
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
@@ -237,8 +239,6 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 }
                 break;
             case DALEK_MODE: // SEEK - LOCATE - DESTROY!
-                dalekSoundBox.set(false);
-
                 int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
@@ -259,8 +259,6 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 }
                 break;
             case DEPOSIT_CUBE:
-                dalekSoundBox.set(true);
-
                 if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
                     clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
                     state = AutoState.FINISHED;
@@ -301,6 +299,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+
+        dalekEye.set(Relay.Value.kOff);
     }
 
     @Override
@@ -352,10 +352,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             liftMotor.set(0);
         }
 
-        //New Power Cube Eating Mode - Azorbaloff!
-        if (dalekMode) { //TODO remove before competition?
-            dalekSoundBox.set(false);
-
+        //New Power Cube Eating Mode - PAC MAN!
+        if (pacManMode) {
             int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
@@ -366,17 +364,17 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             }
 
             System.out.println(coprocessor.getPowerCubeCoord());
-            if (/*Math.abs(visionTargetOffset) > 20 && Math.abs(followDistance) > 300 &&*/
-                    coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
+            if (followDistance < 320) { //Reached target... eat cube!
+                robotDrive.stopMotor();
+                clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
+            } else if (coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
                 System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
                 robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
             } else {
                 System.out.println("No target found, Stopping");
                 robotDrive.stopMotor();
-                dalekMode = false;
+                pacManMode = false;
             }
-        } else {
-            dalekSoundBox.set(true);
         }
     }
 
@@ -387,14 +385,16 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
      */
     private void teleopOperatorControls(Joystick js) {
         if (js.getRawButton(1)) {
-            System.out.println("Entering Dalek mode");
-            System.out.println("SEEK - LOCATE - DESTROY");
-            dalekMode = true;
+            System.out.println("Entering PAC MAN mode");
+            System.out.println("wakawakawakawakawaka");
+            liftState = LiftState.DOWN;
+            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+            pacManMode = true;
         }
 
         if (js.getRawButton(2)) {
-            System.out.println("Leaving Dalek mode");
-            dalekMode = false;
+            System.out.println("Leaving PAC MAN mode");
+            pacManMode = false;
         }
 
         if (js.getRawButtonPressed(3)) {
@@ -407,13 +407,13 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             inLowGear = false;
         }
 
-        if (js.getRawAxis(5) < -0.2) {
+        /*if (js.getRawAxis(5) < -0.2) {
             liftState = LiftState.UP;
         } else if (js.getRawAxis(5) > 0.2) {
             liftState = LiftState.DOWN;
         } else {
             liftState = LiftState.STOPPED;
-        }
+        }*/ //TODO make manual and automatic lift controls interoperable with each other
 
         if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
             liftState = LiftState.UP;
@@ -441,7 +441,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         robotDrive.stopMotor();
         liftMotor.stopMotor();
 
-        dalekMode = false;
+        pacManMode = false;
     }
 
     public enum Autonomous {

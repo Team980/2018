@@ -53,6 +53,9 @@ public class Parameters {
     public static final int SHIFTER_SOLENOID_CHANNEL = 4;
     public static final int CLAW_SOLENOID_CHANNEL = 3;
 
+    // RELAYS
+    public static final int DALEK_EYE_RELAY_CHANNEL = 0;
+
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;
 
