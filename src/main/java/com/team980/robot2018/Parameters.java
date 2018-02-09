@@ -18,14 +18,14 @@ public class Parameters {
     public static final double UPPER_SHIFT_THRESHOLD = 3.25;
     public static final double LOWER_SHIFT_THRESHOLD = 2.5;
 
-    // ENCODERS
-    public static final int LEFT_ENCODER_DIO_CHANNEL_A = 0;
-    public static final int LEFT_ENCODER_DIO_CHANNEL_B = 1;
-    public static final boolean INVERT_LEFT_ENCODER = false;
+    // DRIVE ENCODERS
+    public static final int LEFT_DRIVE_ENCODER_DIO_CHANNEL_A = 0;
+    public static final int LEFT_DRIVE_ENCODER_DIO_CHANNEL_B = 1;
+    public static final boolean INVERT_LEFT_DRIVE_ENCODER = false;
 
-    public static final int RIGHT_ENCODER_DIO_CHANNEL_A = 2;
-    public static final int RIGHT_ENCODER_DIO_CHANNEL_B = 3;
-    public static final boolean INVERT_RIGHT_ENCODER = true;
+    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A = 2;
+    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 3;
+    public static final boolean INVERT_RIGHT_DRIVE_ENCODER = true;
 
     // LIFT SYSTEM
     public static final int LIFT_MOTOR_CAN_ID = 14;
@@ -39,11 +39,21 @@ public class Parameters {
     public static final int LIFT_MOTOR_PDP_CHANNEL = 11;
     public static final double LIFT_MOTOR_CURRENT_THRESHOLD = 20.0;
 
+    // LIFT ENCODER
+    public static final int LIFT_ENCODER_DIO_CHANNEL_A = 8;
+    public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
+    public static final boolean INVERT_LIFT_ENCODER = false;
+
     // PROXIMITY SENSORS
     public static final int LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 1;
     public static final int UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 0;
 
     public static final double PROXIMITY_SENSOR_THRESHOLD = 2.5;
+
+    // PHOTO SWITCH
+    public static final int PHOTO_SWITCH_ANALOG_CHANNEL = 2;
+
+    public static final double PHOTO_SWITCH_THRESHOLD = 2.5;
 
     // IMU
     public static final int IMU_CAN_ID = 6;

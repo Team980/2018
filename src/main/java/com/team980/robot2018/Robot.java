@@ -27,11 +27,14 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     //private Encoder rightDriveEncoder;
 
     private WPI_TalonSRX liftMotor;
-    private int upwardAccelerationCounter;
+
+    private Encoder liftEncoder;
 
     private AnalogInput lowerProximitySensor;
     private AnalogInput upperProximitySensor;
     private LaserRangefinder rangefinder;
+
+    private AnalogInput photoSwitch;
 
     private PigeonIMU imu;
     private double[] ypr;
@@ -51,7 +54,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     private AutoState state;
 
     private boolean inLowGear = true;
+
     private LiftState liftState = LiftState.STOPPED;
+    private int upwardAccelerationCounter;
+
     private boolean pacManMode = false;
 
     private PowerDistributionPanel pdp;
@@ -69,22 +75,29 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
         robotDrive.setName("Robot Drive");
 
-        /*leftDriveEncoder = new Encoder(Parameters.LEFT_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_ENCODER, CounterBase.EncodingType.k4X);
-        leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
-        leftDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
-        leftDriveEncoder.setName("Encoders", "Left");
+        /*leftDriveEncoder = new Encoder(Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
+        leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        leftDriveEncoder.setName("Drive Encoders", "Left");
 
-        rightDriveEncoder = new Encoder(Parameters.RIGHT_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_ENCODER, CounterBase.EncodingType.k4X);
-        rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.wheelRadius / 12)) / (Constants.encoderPulsesPerRevolution));
-        rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
-        rightDriveEncoder.setName("Encoders", "Right");*/
+        rightDriveEncoder = new Encoder(Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
+        rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        rightDriveEncoder.setName("Drive Encoders", "Right");*/
 
         liftMotor = new WPI_TalonSRX(Parameters.LIFT_MOTOR_CAN_ID);
         liftMotor.setName("Lift Motor");
 
+        liftEncoder = new Encoder(Parameters.LIFT_ENCODER_DIO_CHANNEL_A, Parameters.LIFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LIFT_ENCODER, CounterBase.EncodingType.k4X);
+        liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION));
+        liftEncoder.setName("Lift Encoder");
+
         lowerProximitySensor = new AnalogInput(Parameters.LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
+        lowerProximitySensor.setName("Lower Proximity Sensor");
         upperProximitySensor = new AnalogInput(Parameters.UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
+        upperProximitySensor.setName("Upper Proximity Sensor");
         rangefinder = new LaserRangefinder();
+
+        photoSwitch = new AnalogInput(Parameters.PHOTO_SWITCH_ANALOG_CHANNEL);
+        photoSwitch.setName("Photo Switch");
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
@@ -137,6 +150,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table.getSubTable("IMU").getEntry("Pitch").setNumber(ypr[1]);
         table.getSubTable("IMU").getEntry("Roll").setNumber(ypr[2]);
 
+        table.getEntry("Photo Switch").setBoolean(photoSwitch.getVoltage() > Parameters.PHOTO_SWITCH_THRESHOLD);
+
         table.getSubTable("Lift System").getEntry("Lower Proximity Sensor").setBoolean(lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Upper Proximity Sensor").setBoolean(upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Laser Rangefinder").setNumber(rangefinder.getDistance());
@@ -153,6 +168,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     public void autonomousInit() {
         //leftDriveEncoder.reset();
         //rightDriveEncoder.reset();
+
+        liftEncoder.reset();
 
         imu.setYaw(0, 0);
 
@@ -364,7 +381,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             }
 
             System.out.println(coprocessor.getPowerCubeCoord());
-            if (followDistance < 320) { //Reached target... eat cube!
+            if (photoSwitch.getVoltage() > Parameters.PHOTO_SWITCH_THRESHOLD) { //Cube in mouth... eat it!
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
             } else if (coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
@@ -440,6 +457,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
     public void disabledInit() {
         robotDrive.stopMotor();
         liftMotor.stopMotor();
+
+        liftState = LiftState.STOPPED;
 
         pacManMode = false;
     }
