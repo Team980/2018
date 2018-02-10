@@ -30,11 +30,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     private Encoder liftEncoder;
 
-    private AnalogInput lowerProximitySensor;
-    private AnalogInput upperProximitySensor;
     private LaserRangefinder rangefinder;
-
-    private AnalogInput photoSwitch;
 
     private PigeonIMU imu;
     private double[] ypr;
@@ -90,14 +86,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION));
         liftEncoder.setName("Lift Encoder");
 
-        lowerProximitySensor = new AnalogInput(Parameters.LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
-        lowerProximitySensor.setName("Lower Proximity Sensor");
-        upperProximitySensor = new AnalogInput(Parameters.UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL);
-        upperProximitySensor.setName("Upper Proximity Sensor");
         rangefinder = new LaserRangefinder();
-
-        photoSwitch = new AnalogInput(Parameters.PHOTO_SWITCH_ANALOG_CHANNEL);
-        photoSwitch.setName("Photo Switch");
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
@@ -150,10 +139,6 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         table.getSubTable("IMU").getEntry("Pitch").setNumber(ypr[1]);
         table.getSubTable("IMU").getEntry("Roll").setNumber(ypr[2]);
 
-        table.getEntry("Photo Switch").setBoolean(photoSwitch.getVoltage() > Parameters.PHOTO_SWITCH_THRESHOLD);
-
-        table.getSubTable("Lift System").getEntry("Lower Proximity Sensor").setBoolean(lowerProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
-        table.getSubTable("Lift System").getEntry("Upper Proximity Sensor").setBoolean(upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD);
         table.getSubTable("Lift System").getEntry("Laser Rangefinder").setNumber(rangefinder.getDistance());
         table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL));
 
@@ -223,7 +208,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 }
                 break;
             case TURN_TO_ANGLE_AND_LIFT:
-                if (liftState == LiftState.UP && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
+                if (liftState == LiftState.UP && liftEncoder.getDistance() < Parameters.LIFT_ENCODER_UPPER_THRESHOLD
                         && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
                     upwardAccelerationCounter++;
                     double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
@@ -238,7 +223,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
                 if (Math.abs(turnAngle - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
                     robotDrive.arcadeDrive(0, turnSpeed, false);
-                } else if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+                } else if (liftEncoder.getDistance() >= Parameters.LIFT_ENCODER_UPPER_THRESHOLD) {
                     robotDrive.stopMotor();
 
                     liftMotor.set(0);
@@ -276,7 +261,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
                 }
                 break;
             case DEPOSIT_CUBE:
-                if (upperProximitySensor.getVoltage() < Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+                if (liftEncoder.getDistance() >= Parameters.LIFT_ENCODER_UPPER_THRESHOLD) {
                     clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
                     state = AutoState.FINISHED;
                 }
@@ -349,29 +334,11 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
         }*/
 
-        // LIFT SYSTEM
-        if (liftState == LiftState.UP && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
-                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            upwardAccelerationCounter++;
-            double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
-            if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
-                liftMotor.set(speed);
-            } else {
-                liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
-            }
-        } else if (liftState == LiftState.DOWN && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD
-                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            upwardAccelerationCounter = 0;
-            liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
-        } else {
-            liftState = LiftState.STOPPED;
-            upwardAccelerationCounter = 0;
-            liftMotor.set(0);
-        }
+        //TODO add LiftSystem class to the above control mode switch
 
         //New Power Cube Eating Mode - PAC MAN!
         if (pacManMode) {
-            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160;
+            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160 - 30; //off center
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getRangedDistance();
@@ -381,7 +348,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             }
 
             System.out.println(coprocessor.getPowerCubeCoord());
-            if (photoSwitch.getVoltage() > Parameters.PHOTO_SWITCH_THRESHOLD) { //Cube in mouth... eat it!
+            if (coprocessor.getPowerCubeWidth() > 130) { //Cube in mouth... eat it!
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
             } else if (coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
@@ -424,20 +391,37 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             inLowGear = false;
         }
 
-        /*if (js.getRawAxis(5) < -0.2) {
-            liftState = LiftState.UP;
-        } else if (js.getRawAxis(5) > 0.2) {
-            liftState = LiftState.DOWN;
-        } else {
-            liftState = LiftState.STOPPED;
-        }*/ //TODO make manual and automatic lift controls interoperable with each other
-
-        if (js.getRawButton(5) && upperProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+        if (js.getRawButton(5)) {
             liftState = LiftState.UP;
         }
 
-        if (js.getRawButton(6) && lowerProximitySensor.getVoltage() > Parameters.PROXIMITY_SENSOR_THRESHOLD) {
+        if (js.getRawButton(6)) {
             liftState = LiftState.DOWN;
+        }
+
+        // LIFT SYSTEM - TODO MOVE THIS TO ITS OWN CLASS AND INVOKE ALONG WITH DRIVE
+        if (Math.abs(js.getRawAxis(5)) > 0.2) { //Manual override
+            liftState = LiftState.STOPPED;
+            liftMotor.set(-js.getRawAxis(5));
+        } else { //Automatic
+            if (liftState == LiftState.UP && liftEncoder.getDistance() < Parameters.LIFT_ENCODER_UPPER_THRESHOLD
+                    && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+                upwardAccelerationCounter++;
+                double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
+                if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
+                    liftMotor.set(speed);
+                } else {
+                    liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+                }
+            } else if (liftState == LiftState.DOWN && liftEncoder.getDistance() > Parameters.LIFT_ENCODER_LOWER_THRESHOLD
+                    && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+                upwardAccelerationCounter = 0;
+                liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
+            } else {
+                liftState = LiftState.STOPPED;
+                upwardAccelerationCounter = 0;
+                liftMotor.set(0);
+            }
         }
 
         if (js.getRawButtonPressed(7)) {
@@ -450,6 +434,10 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
         if (js.getRawButtonPressed(9)) {
             imu.setYaw(0, 0);
+        }
+
+        if (js.getRawButtonPressed(10)) {
+            liftEncoder.reset();
         }
     }
 

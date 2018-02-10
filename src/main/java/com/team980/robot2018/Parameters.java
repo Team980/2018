@@ -44,16 +44,8 @@ public class Parameters {
     public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
     public static final boolean INVERT_LIFT_ENCODER = false;
 
-    // PROXIMITY SENSORS
-    public static final int LOWER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 1;
-    public static final int UPPER_PROXIMITY_SENSOR_ANALOG_CHANNEL = 0;
-
-    public static final double PROXIMITY_SENSOR_THRESHOLD = 2.5;
-
-    // PHOTO SWITCH
-    public static final int PHOTO_SWITCH_ANALOG_CHANNEL = 2;
-
-    public static final double PHOTO_SWITCH_THRESHOLD = 2.5;
+    public static final double LIFT_ENCODER_UPPER_THRESHOLD = 2.0;
+    public static final double LIFT_ENCODER_LOWER_THRESHOLD = 0.1;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
