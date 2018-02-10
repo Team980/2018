@@ -348,7 +348,7 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             }
 
             System.out.println(coprocessor.getPowerCubeCoord());
-            if (coprocessor.getPowerCubeWidth() > 130) { //Cube in mouth... eat it!
+            if (coprocessor.getPowerCubeWidth() > 130) { //Cube in mouth... eat it! TODO this doesn't work well
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
             } else if (coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
