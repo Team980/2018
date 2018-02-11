@@ -307,21 +307,8 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
 
     @Override
     public void teleopPeriodic() {
-
-        switch (Parameters.CONTROL_MODE) {
-            case COMPETITION_DRIVER_STATION:
-                teleopOperatorControls(operatorController);
-                robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
-                break;
-            case SINGLE_JOYSTICK:
-                teleopOperatorControls(driveStick);
-                robotDrive.arcadeDrive(-driveStick.getY(), driveStick.getX()); //Z axis is improperly calibrated >:(
-                break;
-            case GAME_CONTROLLER:
-                teleopOperatorControls(operatorController);
-                robotDrive.arcadeDrive(-(operatorController.getRawAxis(3) - operatorController.getRawAxis(2)), operatorController.getRawAxis(0));
-                break;
-        }
+        teleopOperatorControls(operatorController); //TODO move back into this method
+        robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
 
         // AUTOMATIC SHIFTING
         /*if (leftDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
@@ -342,15 +329,17 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getRangedDistance();
-            double followSpeed = ((double) followDistance) / 1500;
+            double followSpeed = ((double) followDistance) / 500;
             if (Math.abs(followSpeed) > 0.6) {
                 followSpeed = Math.copySign(0.6, followSpeed);
             }
 
-            System.out.println(coprocessor.getPowerCubeCoord());
-            if (coprocessor.getPowerCubeWidth() > 130) { //Cube in mouth... eat it! TODO this doesn't work well
+            System.out.println(coprocessor.getRangedDistance());
+            if (coprocessor.getRangedDistance() < 350) { //Cube in mouth... eat it!
+                System.out.println("cube found - nomnomnom");
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
+                pacManMode = false;
             } else if (coprocessor.getPowerCubeCoord() > 0 && coprocessor.getPowerCubeCoord() < 400) {
                 System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
                 robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
@@ -400,9 +389,9 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
         }
 
         // LIFT SYSTEM - TODO MOVE THIS TO ITS OWN CLASS AND INVOKE ALONG WITH DRIVE
-        if (Math.abs(js.getRawAxis(5)) > 0.2) { //Manual override
+        if (Math.abs(js.getRawAxis(1)) > 0.2) { //Manual override
             liftState = LiftState.STOPPED;
-            liftMotor.set(-js.getRawAxis(5));
+            liftMotor.set(-js.getRawAxis(1));
         } else { //Automatic
             if (liftState == LiftState.UP && liftEncoder.getDistance() < Parameters.LIFT_ENCODER_UPPER_THRESHOLD
                     && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
@@ -424,12 +413,12 @@ public class Robot extends IterativeRobot { //TODO test TimedRobot - exact 20ms 
             }
         }
 
-        if (js.getRawButtonPressed(7)) {
-            clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
+        if (js.getRawAxis(2) > 0.9) {
+            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
         }
 
-        if (js.getRawButtonPressed(8)) {
-            clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+        if (js.getRawAxis(3) > 0.9) {
+            clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
         }
 
         if (js.getRawButtonPressed(9)) {

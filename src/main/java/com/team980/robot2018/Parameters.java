@@ -3,8 +3,6 @@ package com.team980.robot2018;
 public class Parameters {
 
     // INPUT
-    public static final ControlMode CONTROL_MODE = ControlMode.COMPETITION_DRIVER_STATION;
-
     public static final int DRIVE_STICK_JS_ID = 0;
     public static final int DRIVE_WHEEL_JS_ID = 1;
     public static final int OPERATOR_CONTROLLER_JS_ID = 2;
@@ -72,10 +70,4 @@ public class Parameters {
     public static final int AUTO_RIGHT_SIDE_TURN_ANGLE = 32;
     public static final int AUTO_CENTER_LEFT_TURN_ANGLE = 42;
     public static final int AUTO_CENTER_RIGHT_TURN_ANGLE = -42;
-
-    public enum ControlMode {
-        COMPETITION_DRIVER_STATION,
-        SINGLE_JOYSTICK,
-        GAME_CONTROLLER
-    }
 }
