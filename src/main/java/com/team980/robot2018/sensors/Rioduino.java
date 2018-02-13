@@ -23,9 +23,10 @@ public class Rioduino {
     private int powerCubeCoord;
     private int rangedDistance;
 
+    private boolean initialized = false; //TODO implement
+
     public Rioduino() {
         arduino = new I2C(I2C.Port.kMXP, DEVICE_ADDRESS);
-        //TODO safety to check for arduino and have backup plan
     }
 
     public void updateData() {
@@ -38,6 +39,13 @@ public class Rioduino {
         powerCubeHeight = buffer.getInt(8);
         powerCubeCoord = buffer.getInt(12);
         rangedDistance = buffer.getInt(16);
+    }
+
+    /**
+     * Have we received valid data from the arduino?
+     */
+    public boolean isInitialized() {
+        return initialized;
     }
 
     /**

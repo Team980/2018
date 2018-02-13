@@ -42,8 +42,9 @@ public class Parameters {
     public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
     public static final boolean INVERT_LIFT_ENCODER = false;
 
-    public static final double LIFT_ENCODER_UPPER_THRESHOLD = 2.0;
-    public static final double LIFT_ENCODER_LOWER_THRESHOLD = 0.1;
+    public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
+    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.25;
+    public static final double LIFT_ENCODER_BOTTOM_DISTANCE = -2.3;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
@@ -54,13 +55,13 @@ public class Parameters {
     public static final int CLAW_SOLENOID_CHANNEL = 3;
 
     // RELAYS
-    public static final int DALEK_EYE_RELAY_CHANNEL = 0;
+    public static final int DALEK_EYE_RELAY_CHANNEL = 1;
 
     // AUTONOMOUS
-    public static final double AUTO_MAX_SPEED = 0.5;
+    public static final double AUTO_MAX_SPEED = 0.8;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
-    public static final double AUTO_POSITIONING_DISTANCE = 5.0;
+    public static final double AUTO_POSITIONING_DISTANCE = 4.0;
     public static final double AUTO_BACKUP_DISTANCE = 10.0;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
