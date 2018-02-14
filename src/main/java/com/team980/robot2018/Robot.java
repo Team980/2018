@@ -189,7 +189,7 @@ public class Robot extends TimedRobot {
     }
 
     @Override
-    public void autonomousPeriodic() {
+    public void autonomousPeriodic() { //TODO we always need to be telling arcadeDrive something - work with class extraction
         if (state != AutoState.FINISHED) {
             liftSystem.operateLift();
         }

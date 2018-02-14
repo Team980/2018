@@ -40,10 +40,10 @@ dependencies {
 // Stable versions are automatically selected based on the installed GradleRIO version
 // Sometimes these may need to be overridden if a newer version is desired
 wpi {
-    //wpilibVersion = "2018.2.2"
+    wpilibVersion = "2018.3.1"
     //ctreVersion = "5.2.1.1"
 
-    //shuffleboardVersion = "1.1.1"
+    shuffleboardVersion = "1.2.0"
 }
 
 jar {
