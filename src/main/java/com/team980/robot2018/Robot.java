@@ -40,7 +40,7 @@ public class Robot extends TimedRobot {
 
     private Rioduino coprocessor;
 
-    private Relay dalekEye;
+    private Spark dalekEye;
 
     private SendableChooser<Autonomous> autoChooser;
     private int turnAngle;
@@ -98,7 +98,7 @@ public class Robot extends TimedRobot {
 
         coprocessor = new Rioduino();
 
-        dalekEye = new Relay(Parameters.DALEK_EYE_RELAY_CHANNEL);
+        dalekEye = new Spark(Parameters.DALEK_EYE_RELAY_CHANNEL);
         dalekEye.setName("Dalek Eye");
 
         autoChooser = new SendableChooser<>();
@@ -154,7 +154,7 @@ public class Robot extends TimedRobot {
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
 
-        dalekEye.set(Relay.Value.kForward);
+        dalekEye.set(1);
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
@@ -172,7 +172,7 @@ public class Robot extends TimedRobot {
                         turnAngle = Parameters.AUTO_CENTER_RIGHT_TURN_ANGLE;
                         break;
                     default: //We somehow don't know the angle...
-                        turnAngle = Parameters.AUTO_CENTER_RIGHT_TURN_ANGLE; //TODO set flag to never drop!
+                        turnAngle = Parameters.AUTO_CENTER_LEFT_TURN_ANGLE; //TODO set flag to never drop!
                         break;
                 }
                 break;
@@ -193,6 +193,8 @@ public class Robot extends TimedRobot {
         if (state != AutoState.FINISHED) {
             liftSystem.operateLift();
         }
+
+        dalekEye.set(1);
 
         switch (state) {
             case START:
@@ -228,7 +230,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case DALEK_MODE: // SEEK - LOCATE - DESTROY!
-                int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160 - 30; //off center
+                int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160 - 20; //off center
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
                 int followDistance = coprocessor.getRangedDistance();
@@ -251,8 +253,92 @@ public class Robot extends TimedRobot {
                 if (liftSystem.hasReachedPosition(LiftSystem.LiftPosition.SCALE)) {
                     clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
 
-                    state = AutoState.FINISHED;
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.BACK_UP_FROM_TARGET;
                 }
+                break;
+            case BACK_UP_FROM_TARGET:
+                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE
+                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE) {
+                    robotDrive.stopMotor();
+                    state = AutoState.TURN_AWAY_FROM_TARGET;
+                } else {
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+            case TURN_AWAY_FROM_TARGET:
+                turnSpeed = (Math.copySign(90, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(Math.copySign(90, turnAngle) - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
+                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                } else {
+                    robotDrive.stopMotor();
+                    liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
+
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.MOVE_PAST_TARGET;
+                }
+                break;
+            case MOVE_PAST_TARGET:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_PAST_TARGET_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_PAST_TARGET_DISTANCE) {
+                    robotDrive.stopMotor();
+                    state = AutoState.TURN_TO_ALLIANCE;
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+            case TURN_TO_ALLIANCE:
+                turnSpeed = (Math.copySign(180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(Math.copySign(180, turnAngle) - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
+                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                } else {
+                    robotDrive.stopMotor();
+
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.MOVE_PAST_SWITCH;
+                }
+                break;
+            case MOVE_PAST_SWITCH:
+                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_PAST_SWITCH_DISTANCE
+                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_PAST_SWITCH_DISTANCE) {
+                    robotDrive.stopMotor();
+                    state = AutoState.PAC_MAN_MODE;
+                } else {
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+            case PAC_MAN_MODE:
+                int powerCubeOffset = coprocessor.getPowerCubeCoord() - 160 - 20; //off center
+                turnSpeed = ((double) powerCubeOffset) / 160;
+
+                followDistance = coprocessor.getRangedDistance();
+                followSpeed = ((double) followDistance) / 500;
+                if (Math.abs(followSpeed) > 0.6) {
+                    followSpeed = Math.copySign(0.6, followSpeed);
+                }
+
+                System.out.println(coprocessor.getRangedDistance());
+                if (coprocessor.getRangedDistance() < 350) { //Cube in mouth... eat it!
+                    robotDrive.stopMotor();
+                    state = AutoState.EAT_CUBE;
+                } else if (coprocessor.getPowerCubeCoord() < 400) {
+                    robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
+                } else {
+                    robotDrive.stopMotor();
+                    state = AutoState.FINISHED; //TODO should failure be a state?
+                }
+                break;
+            case EAT_CUBE:
+                clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
+                state = AutoState.FINISHED;
                 break;
             case BACKUP_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
@@ -295,13 +381,15 @@ public class Robot extends TimedRobot {
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
         clawSolenoid.set(DoubleSolenoid.Value.kReverse); //closed
 
-        dalekEye.set(Relay.Value.kOff);
+        dalekEye.set(1);
     }
 
     @Override
     public void teleopPeriodic() {
         robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
         liftSystem.operateLift(operatorController);
+
+        dalekEye.set(1);
 
         if (operatorController.getRawButton(2)) {
             System.out.println("Entering PAC MAN mode");
@@ -367,7 +455,7 @@ public class Robot extends TimedRobot {
 
         //New Power Cube Eating Mode - PAC MAN!
         if (pacManMode) {
-            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160 - 30; //off center
+            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160 - 20; //off center
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getRangedDistance();
@@ -417,6 +505,13 @@ public class Robot extends TimedRobot {
         BACKUP_TURN_TO_ZERO,
         BACKUP_DRIVE_FORWARD,
         DEPOSIT_CUBE,
+        BACK_UP_FROM_TARGET,
+        TURN_AWAY_FROM_TARGET,
+        MOVE_PAST_TARGET,
+        TURN_TO_ALLIANCE,
+        MOVE_PAST_SWITCH,
+        PAC_MAN_MODE,
+        EAT_CUBE,
         FINISHED
     }
 }

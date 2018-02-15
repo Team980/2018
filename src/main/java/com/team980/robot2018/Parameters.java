@@ -54,8 +54,8 @@ public class Parameters {
     public static final int SHIFTER_SOLENOID_CHANNEL = 4;
     public static final int CLAW_SOLENOID_CHANNEL = 3;
 
-    // RELAYS
-    public static final int DALEK_EYE_RELAY_CHANNEL = 3;
+    // RELAY
+    public static final int DALEK_EYE_RELAY_CHANNEL = 0; //this lies - it's not a relay
 
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.8;
@@ -63,6 +63,9 @@ public class Parameters {
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 3.0;
     public static final double AUTO_BACKUP_DISTANCE = 5.0;
+
+    public static final double AUTO_PAST_TARGET_DISTANCE = 2.5;
+    public static final double AUTO_PAST_SWITCH_DISTANCE = 7.5;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
