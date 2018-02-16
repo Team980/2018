@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.I2C;
  * Communicates with a laser rangefinder via the RoboRIO's I2C bus.
  * Also shares the received data with very easy to use getter methods.
  */
+@Deprecated //Removed from robot
 public class LaserRangefinder {
 
     // LOCAL PARAMETERS

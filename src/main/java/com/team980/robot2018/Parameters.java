@@ -58,7 +58,7 @@ public class Parameters {
     public static final int DALEK_EYE_RELAY_CHANNEL = 0; //this lies - it's not a relay
 
     // AUTONOMOUS
-    public static final double AUTO_MAX_SPEED = 0.8;
+    public static final double AUTO_MAX_SPEED = 0.5;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 3.0;

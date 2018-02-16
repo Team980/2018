@@ -12,7 +12,7 @@ public class Rioduino {
 
     // LOCAL PARAMETERS
     private static final int DEVICE_ADDRESS = 4;
-    private static final int BUFFER_SIZE = 20;
+    private static final int BUFFER_SIZE = 24;
 
     private I2C arduino;
 
@@ -21,9 +21,8 @@ public class Rioduino {
     private int powerCubeWidth;
     private int powerCubeHeight;
     private int powerCubeCoord;
-    private int rangedDistance;
-
-    private boolean initialized = false; //TODO implement
+    private int sonarDistance;
+    private int lidarDistance;
 
     public Rioduino() {
         arduino = new I2C(I2C.Port.kMXP, DEVICE_ADDRESS);
@@ -38,14 +37,16 @@ public class Rioduino {
         powerCubeWidth = buffer.getInt(4);
         powerCubeHeight = buffer.getInt(8);
         powerCubeCoord = buffer.getInt(12);
-        rangedDistance = buffer.getInt(16);
+        sonarDistance = buffer.getInt(16);
+        lidarDistance = buffer.getInt(20);
     }
 
     /**
-     * Have we received valid data from the arduino?
+     * Can we communicate with the arduino?
+     * Yes, that method should be inverted
      */
-    public boolean isInitialized() {
-        return initialized;
+    public boolean isActive() {
+        return !arduino.addressOnly();
     }
 
     /**
@@ -85,10 +86,18 @@ public class Rioduino {
     }
 
     /**
-     * The distance reported by the range finder
+     * The distance reported by the ultrasonic (sonar) rangefinder
      * Zero if not set
      */
-    public int getRangedDistance() {
-        return rangedDistance;
+    public int getSonarDistance() {
+        return sonarDistance;
+    }
+
+    /**
+     * The distance reported by the "lidar" rangefinder
+     * Zero if not set
+     */
+    public int getLidarDistance() {
+        return lidarDistance;
     }
 }
