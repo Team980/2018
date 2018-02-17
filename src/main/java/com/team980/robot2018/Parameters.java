@@ -42,9 +42,9 @@ public class Parameters {
     public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
     public static final boolean INVERT_LIFT_ENCODER = false;
 
-    public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
-    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.25;
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = -2.3;
+    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.25;
+    public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
@@ -66,6 +66,9 @@ public class Parameters {
 
     public static final double AUTO_PAST_TARGET_DISTANCE = 2.5;
     public static final double AUTO_PAST_SWITCH_DISTANCE = 7.5;
+
+    public static final double AUTO_ALLIANCE_SCALE_DISTANCE = 22; //TODO
+    public static final double AUTO_OPPONENT_SCALE_DISTANCE = 18; //TODO
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;

@@ -114,9 +114,9 @@ public class LiftSystem {
     }
 
     public enum LiftPosition {
-        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE),
+        BOTTOM(Parameters.LIFT_ENCODER_BOTTOM_DISTANCE),
         SWITCH(Parameters.LIFT_ENCODER_SWITCH_DISTANCE),
-        BOTTOM(Parameters.LIFT_ENCODER_BOTTOM_DISTANCE);
+        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE);
 
         private double distance;
 

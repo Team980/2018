@@ -40,6 +40,7 @@ public class Robot extends TimedRobot {
 
     private SendableChooser<Autonomous> autoChooser;
     private int turnAngle;
+    private double scaleDistance;
     private AutoState state;
 
     private boolean inLowGear = true;
@@ -144,12 +145,15 @@ public class Robot extends TimedRobot {
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
+                state = AutoState.STANDARD_START;
                 turnAngle = Parameters.AUTO_LEFT_SIDE_TURN_ANGLE;
                 break;
             case RIGHT_SIDE_CUBE_DROP:
+                state = AutoState.STANDARD_START;
                 turnAngle = Parameters.AUTO_RIGHT_SIDE_TURN_ANGLE;
                 break;
             case CENTER_CUBE_DROP:
+                state = AutoState.STANDARD_START;
                 switch (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR)) {
                     case LEFT: //Center, turn left to left plate
                         turnAngle = Parameters.AUTO_CENTER_LEFT_TURN_ANGLE;
@@ -163,14 +167,26 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case FAR_LEFT_GET_TO_SCALE:
-                //TODO
+                state = AutoState.GET_TO_SCALE;
+                liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
+                    scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
+                } else {
+                    scaleDistance = Parameters.AUTO_OPPONENT_SCALE_DISTANCE;
+                }
                 break;
-        }
-
-        if (autoChooser.getSelected() == Autonomous.DISABLED) {
-            state = AutoState.FINISHED;
-        } else {
-            state = AutoState.START;
+            case FAR_RIGHT_GET_TO_SCALE:
+                state = AutoState.GET_TO_SCALE;
+                liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
+                    scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
+                } else {
+                    scaleDistance = Parameters.AUTO_OPPONENT_SCALE_DISTANCE;
+                }
+                break;
+            default:
+                state = AutoState.FINISHED;
+                break;
         }
     }
 
@@ -181,7 +197,9 @@ public class Robot extends TimedRobot {
         }
 
         switch (state) {
-            case START:
+
+            // SWITCH
+            case STANDARD_START:
                 if (leftDriveEncoder.getDistance() > Parameters.AUTO_STARTING_DISTANCE
                         || rightDriveEncoder.getDistance() > Parameters.AUTO_STARTING_DISTANCE) {
                     robotDrive.stopMotor();
@@ -334,6 +352,8 @@ public class Robot extends TimedRobot {
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
                 state = AutoState.FINISHED;
                 break;
+
+            // SWITCH FAILSAFE
             case FAILSAFE_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
@@ -357,6 +377,19 @@ public class Robot extends TimedRobot {
                     robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
+
+            // SCALE
+            case GET_TO_SCALE:
+                if (leftDriveEncoder.getDistance() < -scaleDistance
+                        || rightDriveEncoder.getDistance() < -scaleDistance) {
+                    robotDrive.stopMotor();
+                    state = AutoState.FINISHED; //TODO drop cube?
+                } else {
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+
+            // FINISHED
             case FINISHED:
                 //Now we're done!
                 break;
@@ -481,19 +514,20 @@ public class Robot extends TimedRobot {
 
     public enum Autonomous {
         DISABLED,
+
         LEFT_SIDE_CUBE_DROP,
         RIGHT_SIDE_CUBE_DROP,
         CENTER_CUBE_DROP,
-        FAR_LEFT_GET_TO_SCALE
+
+        FAR_LEFT_GET_TO_SCALE,
+        FAR_RIGHT_GET_TO_SCALE
     }
 
     public enum AutoState {
-        START,
+        STANDARD_START,
         TURN_TO_ANGLE,
         MOVE_TO_POSITION,
         DALEK_MODE,
-        FAILSAFE_TURN_TO_ZERO,
-        FAILSAFE_DRIVE_FORWARD,
         DEPOSIT_CUBE,
         BACK_UP_FROM_TARGET,
         TURN_AWAY_FROM_TARGET,
@@ -502,6 +536,12 @@ public class Robot extends TimedRobot {
         MOVE_PAST_SWITCH,
         PAC_MAN_MODE,
         EAT_CUBE,
+
+        FAILSAFE_TURN_TO_ZERO,
+        FAILSAFE_DRIVE_FORWARD,
+
+        GET_TO_SCALE,
+
         FINISHED
     }
 }
