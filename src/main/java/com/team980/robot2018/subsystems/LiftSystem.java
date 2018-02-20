@@ -1,7 +1,6 @@
 package com.team980.robot2018.subsystems;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import com.team980.robot2018.Constants;
 import com.team980.robot2018.Parameters;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.CounterBase;
@@ -27,7 +26,6 @@ public class LiftSystem {
         liftMotor.setName("Lift System", "Lift Motor");
 
         liftEncoder = new Encoder(Parameters.LIFT_ENCODER_DIO_CHANNEL_A, Parameters.LIFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LIFT_ENCODER, CounterBase.EncodingType.k4X);
-        liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION));
         liftEncoder.setName("Lift System", "Lift Encoder");
 
         position = LiftPosition.SCALE; //this should ALWAYS be true
@@ -44,9 +42,9 @@ public class LiftSystem {
     public void setPosition(LiftPosition position) {
         this.position = position;
 
-        if (liftEncoder.getDistance() < position.getDistance()) {
+        if (liftEncoder.getRaw() < position.getDistance()) {
             state = LiftState.MOVING_UP;
-        } else if (liftEncoder.getDistance() > position.getDistance()) {
+        } else if (liftEncoder.getRaw() > position.getDistance()) {
             state = LiftState.MOVING_DOWN;
         } else {
             state = LiftState.STOPPED;
@@ -60,9 +58,9 @@ public class LiftSystem {
     public boolean hasReachedPosition(LiftPosition position) {
         switch (state) {
             case MOVING_UP:
-                return liftEncoder.getDistance() > position.getDistance();
+                return liftEncoder.getRaw() > position.getDistance();
             case MOVING_DOWN:
-                return liftEncoder.getDistance() < position.getDistance();
+                return liftEncoder.getRaw() < position.getDistance();
             default:
                 return true;
         }
@@ -70,6 +68,7 @@ public class LiftSystem {
 
     public void updateData() {
         table.getSubTable("Lift System").getEntry("Lift Position").setString(position.name());
+        table.getSubTable("Lift System").getEntry("Raw Encoder Position").setNumber(liftEncoder.getRaw());
         table.getSubTable("Lift System").getEntry("Lift State").setString(state.name());
         table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL));
     }
@@ -81,7 +80,7 @@ public class LiftSystem {
     public void operateLift(Joystick js) { //Manual override
         if (Math.abs(js.getRawAxis(1)) > 0.2) {
             state = LiftState.STOPPED;
-            liftMotor.set(-js.getRawAxis(1));
+            liftMotor.set(-js.getRawAxis(1) * Parameters.LIFT_MOTOR_MAX_MANUAL_SPEED);
         } else { //Automatic
             operateLift();
         }
