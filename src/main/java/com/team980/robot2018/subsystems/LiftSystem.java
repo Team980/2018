@@ -66,6 +66,10 @@ public class LiftSystem {
         }
     }
 
+    public boolean isAboveNoShiftThreshold() {
+        return liftEncoder.getRaw() > Parameters.LIFT_ENCODER_NO_SHIFT_THRESHOLD;
+    }
+
     public void updateData() {
         table.getSubTable("Lift System").getEntry("Lift Position").setString(position.name());
         table.getSubTable("Lift System").getEntry("Raw Encoder Position").setNumber(liftEncoder.getRaw());

@@ -469,14 +469,19 @@ public class Robot extends TimedRobot {
         }
 
         // AUTOMATIC SHIFTING
-        if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
-                && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
-            inLowGear = false;
-            shifterSolenoid.set(false);
-        } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
-                && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
+        if (liftSystem.isAboveNoShiftThreshold() && !inLowGear) {
             inLowGear = true;
-            shifterSolenoid.set(true);
+            shifterSolenoid.set(false);
+        } else {
+            if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
+                    && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
+                inLowGear = false;
+                shifterSolenoid.set(false);
+            } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
+                    && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
+                inLowGear = true;
+                shifterSolenoid.set(true);
+            }
         }
 
         //New Power Cube Eating Mode - PAC MAN!

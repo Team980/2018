@@ -49,11 +49,12 @@ public class Parameters {
 
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = 0;
     public static final double LIFT_ENCODER_SWITCH_DISTANCE = 58000;
+    public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = 67000;
     public static final double LIFT_ENCODER_SCALE_DISTANCE = 182000;
     public static final double LIFT_ENCODER_TOP_DISTANCE = 187000; //TODO soft stop
 
     // IMU
-    public static final int IMU_CAN_ID = -1; //TODO
+    public static final int IMU_CAN_ID = 0;
 
     // PNEUMATICS
     public static final int PCM_CAN_ID = 0;
