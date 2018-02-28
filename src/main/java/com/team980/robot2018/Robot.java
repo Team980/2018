@@ -239,12 +239,12 @@ public class Robot extends TimedRobot {
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
                 int followDistance = coprocessor.getSonarDistance();
-                double followSpeed = ((double) followDistance) / 500;
+                double followSpeed = ((double) followDistance) / 20;
                 if (Math.abs(followSpeed) > Parameters.AUTO_MAX_SPEED) {
                     followSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, followSpeed);
                 }
 
-                if (followDistance > 0 && followDistance < 320) { //Reached target... EXTERMINATE!
+                if (followDistance > 0 && followDistance < 12.5) { //Reached target... EXTERMINATE!
                     robotDrive.stopMotor();
                     state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() < 400) { //todo consistent
@@ -334,13 +334,12 @@ public class Robot extends TimedRobot {
                 turnSpeed = ((double) powerCubeOffset) / 160;
 
                 followDistance = coprocessor.getSonarDistance();
-                followSpeed = ((double) followDistance) / 500;
+                followSpeed = ((double) followDistance) / 20;
                 if (Math.abs(followSpeed) > 0.6) {
                     followSpeed = Math.copySign(0.6, followSpeed);
                 }
 
-                System.out.println(coprocessor.getSonarDistance());
-                if (coprocessor.getSonarDistance() < 350) { //Cube in mouth... eat it! - TODO consistent
+                if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it! - TODO consistent
                     robotDrive.stopMotor();
                     state = AutoState.EAT_CUBE;
                 } else if (coprocessor.getPowerCubeCoord() < 400) {
@@ -490,13 +489,13 @@ public class Robot extends TimedRobot {
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getSonarDistance();
-            double followSpeed = ((double) followDistance) / 500;
+            double followSpeed = ((double) followDistance) / 20;
             if (Math.abs(followSpeed) > 0.6) {
                 followSpeed = Math.copySign(0.6, followSpeed);
             }
 
             System.out.println(coprocessor.getSonarDistance());
-            if (coprocessor.getSonarDistance() < 350) { //Cube in mouth... eat it!
+            if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it!
                 System.out.println("cube found - nomnomnom");
                 robotDrive.stopMotor();
                 clawSolenoid.set(false); //eat the cube
