@@ -27,6 +27,9 @@ public class Robot extends TimedRobot {
     private Encoder leftDriveEncoder;
     private Encoder rightDriveEncoder;
 
+    private PIDController leftDriveController;
+    private PIDController rightDriveController;
+
     private LiftSystem liftSystem;
 
     private PigeonIMU imu;
@@ -74,11 +77,19 @@ public class Robot extends TimedRobot {
 
         leftDriveEncoder = new Encoder(Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
         leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        leftDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
         leftDriveEncoder.setName("Drive Encoders", "Left");
 
         rightDriveEncoder = new Encoder(Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        rightDriveEncoder.setPIDSourceType(PIDSourceType.kRate);
         rightDriveEncoder.setName("Drive Encoders", "Right");
+
+        leftDriveController = new PIDController(Parameters.LEFT_DRIVE_P, Parameters.LEFT_DRIVE_I, Parameters.LEFT_DRIVE_D, leftDriveEncoder, leftDrive);
+        leftDriveController.setName("Drive PID Controllers", "Left");
+
+        rightDriveController = new PIDController(Parameters.RIGHT_DRIVE_P, Parameters.RIGHT_DRIVE_I, Parameters.RIGHT_DRIVE_D, rightDriveEncoder, rightDrive);
+        rightDriveController.setName("Drive PID Controllers", "Right");
 
         liftSystem = new LiftSystem(pdp, table);
 
@@ -137,6 +148,9 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
+
+        leftDriveController.setEnabled(false);
+        rightDriveController.setEnabled(false);
 
         liftSystem.resetEncoder();
         liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
@@ -405,6 +419,12 @@ public class Robot extends TimedRobot {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
 
+        leftDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
+        leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+
+        rightDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
+        rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+
         imu.setYaw(0, 0);
 
         shifterSolenoid.set(true); //low
@@ -413,7 +433,16 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+
+        if (Parameters.DRIVE_PID_ENABLED) {
+            double maxSpeed = inLowGear ? Parameters.PID_MAX_SPEED_LOW_GEAR : Parameters.PID_MAX_SPEED_HIGH_GEAR;
+
+            leftDriveController.setSetpoint(-driveStick.getY() * maxSpeed); //TODO implement steering wheel
+            rightDriveController.setSetpoint(-driveStick.getY() * maxSpeed);
+        } else {
+            robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+        }
+
         liftSystem.operateLift(operatorController);
 
         if (operatorController.getRawButton(2)) {
@@ -470,16 +499,22 @@ public class Robot extends TimedRobot {
         // AUTOMATIC SHIFTING
         if (liftSystem.isAboveNoShiftThreshold() && !inLowGear) {
             inLowGear = true;
-            shifterSolenoid.set(false);
+            shifterSolenoid.set(true);
+            leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+            rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
         } else {
             if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
                     && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
                 inLowGear = false;
                 shifterSolenoid.set(false);
+                leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
+                rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
             } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
                     && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
                 inLowGear = true;
                 shifterSolenoid.set(true);
+                leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+                rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
             }
         }
 

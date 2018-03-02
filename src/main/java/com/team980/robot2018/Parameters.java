@@ -28,6 +28,19 @@ public class Parameters {
     public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 5;
     public static final boolean INVERT_RIGHT_DRIVE_ENCODER = true;
 
+    // DRIVE PID
+    public static final boolean DRIVE_PID_ENABLED = false;
+    public static final double PID_MAX_SPEED_LOW_GEAR = 5.5;
+    public static final double PID_MAX_SPEED_HIGH_GEAR = 18;
+
+    public static final double LEFT_DRIVE_P = 0.0;
+    public static final double LEFT_DRIVE_I = 0.0;
+    public static final double LEFT_DRIVE_D = 0.0;
+
+    public static final double RIGHT_DRIVE_P = 0.0;
+    public static final double RIGHT_DRIVE_I = 0.0;
+    public static final double RIGHT_DRIVE_D = 0.0;
+
     // LIFT SYSTEM
     public static final int LIFT_MOTOR_CAN_ID = 0;
 
