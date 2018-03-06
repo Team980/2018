@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import openrio.powerup.MatchData;
 
 public class Robot extends TimedRobot {
-    //TODO reorganize all these variables
 
     private PowerDistributionPanel pdp;
     private NetworkTable table;
@@ -27,6 +26,9 @@ public class Robot extends TimedRobot {
 
     private Encoder leftDriveEncoder;
     private Encoder rightDriveEncoder;
+
+    private PIDController leftDriveController;
+    private PIDController rightDriveController;
 
     private LiftSystem liftSystem;
 
@@ -76,6 +78,12 @@ public class Robot extends TimedRobot {
         rightDriveEncoder = new Encoder(Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
         rightDriveEncoder.setName("Drive Encoders", "Right");
+
+        leftDriveController = new PIDController(Parameters.LEFT_DRIVE_P, Parameters.LEFT_DRIVE_I, Parameters.LEFT_DRIVE_D, leftDriveEncoder, leftDrive);
+        leftDriveController.setName("Drive PID Controllers", "Left");
+
+        rightDriveController = new PIDController(Parameters.RIGHT_DRIVE_P, Parameters.RIGHT_DRIVE_I, Parameters.RIGHT_DRIVE_D, rightDriveEncoder, rightDrive);
+        rightDriveController.setName("Drive PID Controllers", "Right");
 
         liftSystem = new LiftSystem(pdp, table);
 
@@ -134,6 +142,9 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
+
+        leftDriveController.setEnabled(false);
+        rightDriveController.setEnabled(false);
 
         liftSystem.resetEncoder();
         liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
@@ -236,12 +247,12 @@ public class Robot extends TimedRobot {
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
                 int followDistance = coprocessor.getSonarDistance();
-                double followSpeed = ((double) followDistance) / 500;
+                double followSpeed = ((double) followDistance) / 20;
                 if (Math.abs(followSpeed) > Parameters.AUTO_MAX_SPEED) {
                     followSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, followSpeed);
                 }
 
-                if (followDistance > 0 && followDistance < 320) { //Reached target... EXTERMINATE!
+                if (followDistance > 0 && followDistance < 12.5) { //Reached target... EXTERMINATE!
                     robotDrive.stopMotor();
                     state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() < 400) { //todo consistent
@@ -331,13 +342,13 @@ public class Robot extends TimedRobot {
                 turnSpeed = ((double) powerCubeOffset) / 160;
 
                 followDistance = coprocessor.getSonarDistance();
-                followSpeed = ((double) followDistance) / 500;
+                followSpeed = ((double) followDistance) / 20;
                 if (Math.abs(followSpeed) > 0.6) {
                     followSpeed = Math.copySign(0.6, followSpeed);
                 }
 
                 System.out.println(coprocessor.getSonarDistance());
-                if (coprocessor.getSonarDistance() < 350) { //Cube in mouth... eat it! - TODO consistent
+                if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it! - TODO consistent
                     robotDrive.stopMotor();
                     state = AutoState.EAT_CUBE;
                 } else if (coprocessor.getPowerCubeCoord() < 400) {
@@ -403,6 +414,12 @@ public class Robot extends TimedRobot {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
 
+        leftDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
+        leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+
+        rightDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
+        rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+
         imu.setYaw(0, 0);
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
@@ -411,7 +428,16 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+        if (Parameters.DRIVE_PID_ENABLED) {
+
+            double maxSpeed = inLowGear ? Parameters.PID_MAX_SPEED_LOW_GEAR : Parameters.PID_MAX_SPEED_HIGH_GEAR;
+
+            leftDriveController.setSetpoint(-driveStick.getY() * maxSpeed); //TODO implement steering wheel
+            rightDriveController.setSetpoint(-driveStick.getY() * maxSpeed);
+        } else {
+            robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+        }
+
         liftSystem.operateLift(operatorController);
 
         if (operatorController.getRawButton(2)) {
@@ -466,15 +492,20 @@ public class Robot extends TimedRobot {
         }
 
         // AUTOMATIC SHIFTING
-        if (leftDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD
-                && rightDriveEncoder.getRate() > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
+        if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
+                && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
             inLowGear = false;
             shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
-        } else if (leftDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD
-                && rightDriveEncoder.getRate() < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
+            leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
+            rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
+        } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
+                && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
             inLowGear = true;
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+            leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+            rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
         }
+
 
         //New Power Cube Eating Mode - PAC MAN!
         if (pacManMode) {
@@ -482,13 +513,13 @@ public class Robot extends TimedRobot {
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getSonarDistance();
-            double followSpeed = ((double) followDistance) / 500;
+            double followSpeed = ((double) followDistance) / 20;
             if (Math.abs(followSpeed) > 0.6) {
                 followSpeed = Math.copySign(0.6, followSpeed);
             }
 
             System.out.println(coprocessor.getSonarDistance());
-            if (coprocessor.getSonarDistance() < 350) { //Cube in mouth... eat it!
+            if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it!
                 System.out.println("cube found - nomnomnom");
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
@@ -507,6 +538,10 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         robotDrive.stopMotor();
+
+        leftDriveController.disable();
+        rightDriveController.disable();
+
         liftSystem.disable();
 
         pacManMode = false;

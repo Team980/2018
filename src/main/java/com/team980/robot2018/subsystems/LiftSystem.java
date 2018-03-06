@@ -81,7 +81,7 @@ public class LiftSystem {
     public void operateLift(Joystick js) { //Manual override
         if (Math.abs(js.getRawAxis(1)) > 0.2) {
             state = LiftState.STOPPED;
-            liftMotor.set(-js.getRawAxis(1));
+            liftMotor.set(-js.getRawAxis(1) * Parameters.LIFT_MOTOR_MAX_MANUAL_SPEED);
         } else { //Automatic
             operateLift();
         }

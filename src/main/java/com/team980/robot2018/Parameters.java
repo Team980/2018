@@ -13,7 +13,7 @@ public class Parameters {
     public static final int RIGHT_FRONT_DRIVE_CAN_ID = 12;
     public static final int RIGHT_BACK_DRIVE_CAN_ID = 13;
 
-    public static final double UPPER_SHIFT_THRESHOLD = 3.25;
+    public static final double UPPER_SHIFT_THRESHOLD = 4.75;
     public static final double LOWER_SHIFT_THRESHOLD = 2.5;
 
     // DRIVE ENCODERS
@@ -25,6 +25,19 @@ public class Parameters {
     public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 3;
     public static final boolean INVERT_RIGHT_DRIVE_ENCODER = true;
 
+    // DRIVE PID
+    public static final boolean DRIVE_PID_ENABLED = false;
+    public static final double PID_MAX_SPEED_LOW_GEAR = 5.5;
+    public static final double PID_MAX_SPEED_HIGH_GEAR = 18;
+
+    public static final double LEFT_DRIVE_P = 0.0;
+    public static final double LEFT_DRIVE_I = 0.0;
+    public static final double LEFT_DRIVE_D = 0.0;
+
+    public static final double RIGHT_DRIVE_P = 0.0;
+    public static final double RIGHT_DRIVE_I = 0.0;
+    public static final double RIGHT_DRIVE_D = 0.0;
+
     // LIFT SYSTEM
     public static final int LIFT_MOTOR_CAN_ID = 14;
 
@@ -33,6 +46,8 @@ public class Parameters {
 
     public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 1.0;
     public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.5;
+
+    public static final double LIFT_MOTOR_MAX_MANUAL_SPEED = 1.0;
 
     public static final int LIFT_MOTOR_PDP_CHANNEL = 11;
     public static final double LIFT_MOTOR_CURRENT_THRESHOLD = 20.0;
@@ -53,9 +68,6 @@ public class Parameters {
     public static final int PCM_CAN_ID = 1;
     public static final int SHIFTER_SOLENOID_CHANNEL = 4;
     public static final int CLAW_SOLENOID_CHANNEL = 3;
-
-    // RELAY
-    public static final int DALEK_EYE_RELAY_CHANNEL = 0; //this lies - it's not a relay
 
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 0.5;
