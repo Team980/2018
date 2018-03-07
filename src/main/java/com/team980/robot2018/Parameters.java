@@ -13,7 +13,7 @@ public class Parameters {
     public static final int RIGHT_FRONT_DRIVE_CAN_ID = 12;
     public static final int RIGHT_BACK_DRIVE_CAN_ID = 13;
 
-    public static final double UPPER_SHIFT_THRESHOLD = 4.75;
+    public static final double UPPER_SHIFT_THRESHOLD = 3.3;
     public static final double LOWER_SHIFT_THRESHOLD = 2.5;
 
     // DRIVE ENCODERS
