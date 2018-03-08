@@ -463,7 +463,7 @@ public class Robot extends TimedRobot {
             inLowGear = false;
         }
 
-        if (operatorController.getRawButton(5)) {
+        if (operatorController.getRawButton(6)) {
             liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
         }
 
@@ -471,7 +471,7 @@ public class Robot extends TimedRobot {
             liftSystem.setPosition(LiftSystem.LiftPosition.SWITCH);
         }
 
-        if (operatorController.getRawButton(6)) {
+        if (operatorController.getRawButton(5)) {
             liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
         }
 
