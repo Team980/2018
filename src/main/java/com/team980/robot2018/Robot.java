@@ -486,16 +486,21 @@ public class Robot extends TimedRobot {
         if (operatorController.getRawButtonPressed(10)) {
             liftSystem.resetEncoder();
         }
-        
+
         // AUTOMATIC SHIFTING
-        if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
-                && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
-            inLowGear = false;
-            shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
-        } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
-                && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
+        if (liftSystem.hasReachedPosition(LiftSystem.LiftPosition.SCALE) && !inLowGear) { //hack shift limit
             inLowGear = true;
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+        } else {
+            if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
+                    && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
+                inLowGear = false;
+                shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
+            } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
+                    && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
+                inLowGear = true;
+                shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+            }
         }
 
         //New Power Cube Eating Mode - PAC MAN!
