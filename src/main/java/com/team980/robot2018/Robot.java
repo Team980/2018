@@ -21,6 +21,7 @@ public class Robot extends TimedRobot {
     private Joystick driveStick;
     private Joystick driveWheel;
     private Joystick operatorController; //TODO: Wrapper class for gamepad that names all the buttons and sticks
+    private Joystick prajBox;
 
     private DifferentialDrive robotDrive;
 
@@ -47,6 +48,8 @@ public class Robot extends TimedRobot {
 
     private boolean inLowGear = true;
     private boolean pacManMode = false;
+    
+    private WPI_TalonSRX climber;
 
     @Override
     public void robotInit() {
@@ -59,6 +62,7 @@ public class Robot extends TimedRobot {
         driveStick = new Joystick(Parameters.DRIVE_STICK_JS_ID);
         driveWheel = new Joystick(Parameters.DRIVE_WHEEL_JS_ID);
         operatorController = new Joystick(Parameters.OPERATOR_CONTROLLER_JS_ID);
+        prajBox = new Joystick(3);
 
         SpeedControllerGroup leftDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.LEFT_FRONT_DRIVE_CAN_ID),
                 new WPI_TalonSRX(Parameters.LEFT_BACK_DRIVE_CAN_ID));
@@ -67,6 +71,8 @@ public class Robot extends TimedRobot {
         SpeedControllerGroup rightDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.RIGHT_FRONT_DRIVE_CAN_ID),
                 new WPI_TalonSRX(Parameters.RIGHT_BACK_DRIVE_CAN_ID));
         rightDrive.setInverted(true);
+        
+        climber = new WPI_TalonSRX(14);
 
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
         robotDrive.setName("Robot Drive");
@@ -491,6 +497,16 @@ public class Robot extends TimedRobot {
             liftSystem.resetEncoder();
         }
 
+        //CLIMBER CONTROL
+        if (prajBox.getRawButton(0)){
+        	if(prajBox.getRawButton(3)){
+            	climber.set(operatorController.getRawAxis(5));
+        	}//end climber with reverse enabled
+        	else{
+        		climber.set(Math.abs(operatorController.getRawAxis(5)));
+        	}// climber with reverse disabled
+        }//end climber enabled
+        
         // AUTOMATIC SHIFTING
         if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
                 && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
@@ -504,6 +520,14 @@ public class Robot extends TimedRobot {
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
             leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
             rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
+        }
+        
+        //TIPPING PROTECTION WITH GYRO
+        if (ypr[2] > 30){
+            robotDrive.arcadeDrive(.4, 0);
+        }//end tipping backward protect
+        else if (ypr[2] < -30){
+            robotDrive.arcadeDrive(-.4, 0);
         }
 
 
