@@ -7,7 +7,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.CounterBase;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.PowerDistributionPanel;
 
 public class LiftSystem {
 
@@ -19,10 +18,9 @@ public class LiftSystem {
 
     private int upwardAccelerationCounter = 0;
 
-    private PowerDistributionPanel pdp;
     private NetworkTable table;
 
-    public LiftSystem(PowerDistributionPanel pdp, NetworkTable table) {
+    public LiftSystem(NetworkTable table) {
         liftMotor = new WPI_TalonSRX(Parameters.LIFT_MOTOR_CAN_ID);
         liftMotor.setName("Lift System", "Lift Motor");
 
@@ -33,7 +31,6 @@ public class LiftSystem {
         position = LiftPosition.SCALE; //this should ALWAYS be true
         state = LiftState.STOPPED; //We don't want to move the lift right now!
 
-        this.pdp = pdp;
         this.table = table;
     }
 
@@ -71,7 +68,7 @@ public class LiftSystem {
     public void updateData() {
         table.getSubTable("Lift System").getEntry("Lift Position").setString(position.name());
         table.getSubTable("Lift System").getEntry("Lift State").setString(state.name());
-        table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL));
+        table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(liftMotor.getOutputCurrent());
     }
 
     public void resetEncoder() {
@@ -89,7 +86,7 @@ public class LiftSystem {
 
     public void operateLift() {
         if (state == LiftState.MOVING_UP && !hasReachedPosition(position)
-                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+                && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
             upwardAccelerationCounter++;
             double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
             if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
@@ -98,7 +95,7 @@ public class LiftSystem {
                 liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
             }
         } else if (state == LiftState.MOVING_DOWN && !hasReachedPosition(position)
-                && pdp.getCurrent(Parameters.LIFT_MOTOR_PDP_CHANNEL) < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+                && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
             upwardAccelerationCounter = 0;
             liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
         } else {
@@ -109,7 +106,7 @@ public class LiftSystem {
     }
 
     public void disable() {
-        liftMotor.stopMotor();
+        liftMotor.disable();
         state = LiftState.STOPPED;
     }
 

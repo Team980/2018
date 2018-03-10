@@ -28,10 +28,9 @@ public class Robot extends TimedRobot {
     private Encoder leftDriveEncoder;
     private Encoder rightDriveEncoder;
 
-    private PIDController leftDriveController;
-    private PIDController rightDriveController;
-
     private LiftSystem liftSystem;
+
+    private WPI_TalonSRX climbMotor;
 
     private PigeonIMU imu;
     private double[] ypr;
@@ -48,8 +47,6 @@ public class Robot extends TimedRobot {
 
     private boolean inLowGear = true;
     private boolean pacManMode = false;
-    
-    private WPI_TalonSRX climber;
 
     @Override
     public void robotInit() {
@@ -71,8 +68,6 @@ public class Robot extends TimedRobot {
         SpeedControllerGroup rightDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.RIGHT_FRONT_DRIVE_CAN_ID),
                 new WPI_TalonSRX(Parameters.RIGHT_BACK_DRIVE_CAN_ID));
         rightDrive.setInverted(true);
-        
-        climber = new WPI_TalonSRX(14);
 
         robotDrive = new DifferentialDrive(leftDrive, rightDrive);
         robotDrive.setName("Robot Drive");
@@ -85,20 +80,17 @@ public class Robot extends TimedRobot {
         rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
         rightDriveEncoder.setName("Drive Encoders", "Right");
 
-        leftDriveController = new PIDController(Parameters.LEFT_DRIVE_P, Parameters.LEFT_DRIVE_I, Parameters.LEFT_DRIVE_D, leftDriveEncoder, leftDrive);
-        leftDriveController.setName("Drive PID Controllers", "Left");
+        liftSystem = new LiftSystem(table);
 
-        rightDriveController = new PIDController(Parameters.RIGHT_DRIVE_P, Parameters.RIGHT_DRIVE_I, Parameters.RIGHT_DRIVE_D, rightDriveEncoder, rightDrive);
-        rightDriveController.setName("Drive PID Controllers", "Right");
-
-        liftSystem = new LiftSystem(pdp, table);
+        climbMotor = new WPI_TalonSRX(Parameters.CLIMB_MOTOR_CAN_ID);
+        climbMotor.setName("Climb Motor");
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
         dashGyro.setName("Dashboard Gyro");
         ypr = new double[3];
 
-        shifterSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 0, 1);//TODO go back to singular (Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
+        shifterSolenoid = new DoubleSolenoid(Parameters.PCM_CAN_ID, 0, 1);
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
         inLowGear = true;
 
@@ -148,9 +140,6 @@ public class Robot extends TimedRobot {
     public void autonomousInit() {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
-
-        leftDriveController.setEnabled(false);
-        rightDriveController.setEnabled(false);
 
         liftSystem.resetEncoder();
         liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
@@ -361,7 +350,7 @@ public class Robot extends TimedRobot {
                     robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
                 } else {
                     robotDrive.stopMotor();
-                    state = AutoState.FINISHED; //TODO should failure be a state?
+                    state = AutoState.FINISHED;
                 }
                 break;
             case EAT_CUBE:
@@ -400,7 +389,7 @@ public class Robot extends TimedRobot {
                 if (leftDriveEncoder.getDistance() < -scaleDistance
                         || rightDriveEncoder.getDistance() < -scaleDistance) {
                     robotDrive.stopMotor();
-                    state = AutoState.FINISHED; //TODO drop cube?
+                    state = AutoState.FINISHED;
                 } else {
                     robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
                 }
@@ -420,12 +409,6 @@ public class Robot extends TimedRobot {
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
 
-        leftDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
-        leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
-
-        rightDriveController.setEnabled(Parameters.DRIVE_PID_ENABLED);
-        rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
-
         imu.setYaw(0, 0);
 
         shifterSolenoid.set(DoubleSolenoid.Value.kForward); //low
@@ -434,17 +417,24 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        if (Parameters.DRIVE_PID_ENABLED) {
-
-            double maxSpeed = inLowGear ? Parameters.PID_MAX_SPEED_LOW_GEAR : Parameters.PID_MAX_SPEED_HIGH_GEAR;
-
-            leftDriveController.setSetpoint(-driveStick.getY() * maxSpeed); //TODO implement steering wheel
-            rightDriveController.setSetpoint(-driveStick.getY() * maxSpeed);
+        if (Math.abs(ypr[2]) >= 30) { // TIPPING PROTECTION - OVERRIDE driver input
+            robotDrive.arcadeDrive(Math.copySign(0.4, ypr[2]), 0);
         } else {
             robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
         }
 
         liftSystem.operateLift(operatorController);
+
+        // CLIMBER CONTROL
+        if (prajBox.getRawButton(0)) {
+            if (prajBox.getRawButton(4)) { //Only allow backdrive if an extra button is being held
+                climbMotor.set(operatorController.getRawAxis(5));
+            } else {
+                climbMotor.set(Math.abs(operatorController.getRawAxis(5)));
+            }
+        } else {
+            climbMotor.set(0);
+        }
 
         if (operatorController.getRawButton(2)) {
             System.out.println("Entering PAC MAN mode");
@@ -496,40 +486,17 @@ public class Robot extends TimedRobot {
         if (operatorController.getRawButtonPressed(10)) {
             liftSystem.resetEncoder();
         }
-
-        //CLIMBER CONTROL
-        if (prajBox.getRawButton(0)){
-        	if(prajBox.getRawButton(3)){
-            	climber.set(operatorController.getRawAxis(5));
-        	}//end climber with reverse enabled
-        	else{
-        		climber.set(Math.abs(operatorController.getRawAxis(5)));
-        	}// climber with reverse disabled
-        }//end climber enabled
         
         // AUTOMATIC SHIFTING
         if (Math.abs(leftDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD
                 && Math.abs(rightDriveEncoder.getRate()) > Parameters.UPPER_SHIFT_THRESHOLD && inLowGear) {
             inLowGear = false;
             shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
-            leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
-            rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_HIGH_GEAR, Parameters.PID_MAX_SPEED_HIGH_GEAR);
         } else if (Math.abs(leftDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD
                 && Math.abs(rightDriveEncoder.getRate()) < Parameters.LOWER_SHIFT_THRESHOLD && !inLowGear) {
             inLowGear = true;
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
-            leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
-            rightDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
         }
-        
-        //TIPPING PROTECTION WITH GYRO
-        if (ypr[2] > 30){
-            robotDrive.arcadeDrive(.4, 0);
-        }//end tipping backward protect
-        else if (ypr[2] < -30){
-            robotDrive.arcadeDrive(-.4, 0);
-        }
-
 
         //New Power Cube Eating Mode - PAC MAN!
         if (pacManMode) {
@@ -563,10 +530,9 @@ public class Robot extends TimedRobot {
     public void disabledInit() {
         robotDrive.stopMotor();
 
-        leftDriveController.disable();
-        rightDriveController.disable();
-
         liftSystem.disable();
+
+        climbMotor.disable();
 
         pacManMode = false;
     }

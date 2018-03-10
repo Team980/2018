@@ -25,19 +25,6 @@ public class Parameters {
     public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 3;
     public static final boolean INVERT_RIGHT_DRIVE_ENCODER = true;
 
-    // DRIVE PID
-    public static final boolean DRIVE_PID_ENABLED = false;
-    public static final double PID_MAX_SPEED_LOW_GEAR = 5.5;
-    public static final double PID_MAX_SPEED_HIGH_GEAR = 18;
-
-    public static final double LEFT_DRIVE_P = 0.0;
-    public static final double LEFT_DRIVE_I = 0.0;
-    public static final double LEFT_DRIVE_D = 0.0;
-
-    public static final double RIGHT_DRIVE_P = 0.0;
-    public static final double RIGHT_DRIVE_I = 0.0;
-    public static final double RIGHT_DRIVE_D = 0.0;
-
     // LIFT SYSTEM
     public static final int LIFT_MOTOR_CAN_ID = 14;
 
@@ -49,7 +36,6 @@ public class Parameters {
 
     public static final double LIFT_MOTOR_MAX_MANUAL_SPEED = 1.0;
 
-    public static final int LIFT_MOTOR_PDP_CHANNEL = 11;
     public static final double LIFT_MOTOR_CURRENT_THRESHOLD = 20.0;
 
     // LIFT ENCODER
@@ -60,6 +46,9 @@ public class Parameters {
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = -2.3;
     public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.25;
     public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
+
+    // CLIMBER
+    public static final int CLIMB_MOTOR_CAN_ID = 14;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
