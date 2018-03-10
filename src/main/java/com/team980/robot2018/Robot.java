@@ -59,7 +59,7 @@ public class Robot extends TimedRobot {
         driveStick = new Joystick(Parameters.DRIVE_STICK_JS_ID);
         driveWheel = new Joystick(Parameters.DRIVE_WHEEL_JS_ID);
         operatorController = new Joystick(Parameters.OPERATOR_CONTROLLER_JS_ID);
-        prajBox = new Joystick(3);
+        prajBox = new Joystick(Parameters.PRAJ_BOX_JS_ID);
 
         SpeedControllerGroup leftDrive = new SpeedControllerGroup(new WPI_TalonSRX(Parameters.LEFT_FRONT_DRIVE_CAN_ID),
                 new WPI_TalonSRX(Parameters.LEFT_BACK_DRIVE_CAN_ID));
@@ -426,11 +426,11 @@ public class Robot extends TimedRobot {
         liftSystem.operateLift(operatorController);
 
         // CLIMBER CONTROL
-        if (prajBox.getRawButton(0)) {
+        if (prajBox.getRawButton(1) && Math.abs(operatorController.getRawAxis(5)) > 0.2) {
             if (prajBox.getRawButton(4)) { //Only allow backdrive if an extra button is being held
                 climbMotor.set(operatorController.getRawAxis(5));
             } else {
-                climbMotor.set(Math.abs(operatorController.getRawAxis(5)));
+                climbMotor.set(-Math.abs(operatorController.getRawAxis(5)));
             }
         } else {
             climbMotor.set(0);

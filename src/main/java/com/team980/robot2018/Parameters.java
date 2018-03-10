@@ -6,6 +6,7 @@ public class Parameters {
     public static final int DRIVE_STICK_JS_ID = 0;
     public static final int DRIVE_WHEEL_JS_ID = 1;
     public static final int OPERATOR_CONTROLLER_JS_ID = 2;
+    public static final int PRAJ_BOX_JS_ID = 3;
 
     // DRIVE SYSTEM
     public static final int LEFT_FRONT_DRIVE_CAN_ID = 7;
@@ -48,7 +49,7 @@ public class Parameters {
     public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
 
     // CLIMBER
-    public static final int CLIMB_MOTOR_CAN_ID = 14;
+    public static final int CLIMB_MOTOR_CAN_ID = 9;
 
     // IMU
     public static final int IMU_CAN_ID = 6;
