@@ -21,7 +21,7 @@ deploy {
     targets {
         target("roborio", RoboRIO) {
             team = TEAM
-            //addresses << 'roboRIO-980-FRC.local' << '10.9.80.2' //In order of preference
+            //addresses << '169.254.198.12' //In order of preference
         }
     }
     artifacts {

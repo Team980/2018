@@ -1,5 +1,6 @@
 package com.team980.robot2018;
 
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.sensors.PigeonIMU;
 import com.team980.robot2018.sensors.Rioduino;
@@ -20,7 +21,8 @@ public class Robot extends TimedRobot {
 
     private Joystick driveStick;
     private Joystick driveWheel;
-    private Joystick operatorController;
+    private Joystick operatorController; //TODO: Wrapper class for gamepad that names all the buttons and sticks
+    private Joystick prajBox;
 
     private DifferentialDrive robotDrive;
 
@@ -31,6 +33,8 @@ public class Robot extends TimedRobot {
     private PIDController rightDriveController;
 
     private LiftSystem liftSystem;
+
+    private WPI_TalonSRX climbMotor;
 
     private PigeonIMU imu;
     private double[] ypr;
@@ -59,6 +63,7 @@ public class Robot extends TimedRobot {
         driveStick = new Joystick(Parameters.DRIVE_STICK_JS_ID);
         driveWheel = new Joystick(Parameters.DRIVE_WHEEL_JS_ID);
         operatorController = new Joystick(Parameters.OPERATOR_CONTROLLER_JS_ID);
+        prajBox = new Joystick(Parameters.PRAJ_BOX_JS_ID);
 
         WPI_VictorSPX leftTopMotor = new WPI_VictorSPX(Parameters.LEFT_TOP_DRIVE_CAN_ID);
         leftTopMotor.setInverted(true);
@@ -91,7 +96,10 @@ public class Robot extends TimedRobot {
         rightDriveController = new PIDController(Parameters.RIGHT_DRIVE_P, Parameters.RIGHT_DRIVE_I, Parameters.RIGHT_DRIVE_D, rightDriveEncoder, rightDrive);
         rightDriveController.setName("Drive PID Controllers", "Right");
 
-        liftSystem = new LiftSystem(pdp, table);
+        liftSystem = new LiftSystem(table);
+
+        climbMotor = new WPI_TalonSRX(Parameters.CLIMB_MOTOR_CAN_ID);
+        climbMotor.setName("Climb Motor");
 
         imu = new PigeonIMU(Parameters.IMU_CAN_ID);
         PigeonGyro dashGyro = new PigeonGyro(imu);
@@ -113,6 +121,7 @@ public class Robot extends TimedRobot {
         autoChooser.addObject("Right Side - Cube Drop", Autonomous.RIGHT_SIDE_CUBE_DROP);
         autoChooser.addObject("Center - Cube Drop", Autonomous.CENTER_CUBE_DROP);
         autoChooser.addObject("Far Left - Get To Scale", Autonomous.FAR_LEFT_GET_TO_SCALE);
+        autoChooser.addObject("Far Right - Get To Scale", Autonomous.FAR_RIGHT_GET_TO_SCALE);
         autoChooser.setName("Autonomous Chooser");
         LiveWindow.add(autoChooser); //This actually works
 
@@ -153,24 +162,28 @@ public class Robot extends TimedRobot {
         rightDriveController.setEnabled(false);
 
         liftSystem.resetEncoder();
-        liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+        liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
 
         imu.setYaw(0, 0);
 
         shifterSolenoid.set(true); //low
+        inLowGear = true;
         clawSolenoid.set(false); //closed
 
         switch (autoChooser.getSelected()) {
             case LEFT_SIDE_CUBE_DROP:
                 state = AutoState.STANDARD_START;
+                liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 turnAngle = Parameters.AUTO_LEFT_SIDE_TURN_ANGLE;
                 break;
             case RIGHT_SIDE_CUBE_DROP:
                 state = AutoState.STANDARD_START;
+                liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 turnAngle = Parameters.AUTO_RIGHT_SIDE_TURN_ANGLE;
                 break;
             case CENTER_CUBE_DROP:
                 state = AutoState.STANDARD_START;
+                liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 switch (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR)) {
                     case LEFT: //Center, turn left to left plate
                         turnAngle = Parameters.AUTO_CENTER_LEFT_TURN_ANGLE;
@@ -185,7 +198,7 @@ public class Robot extends TimedRobot {
                 break;
             case FAR_LEFT_GET_TO_SCALE:
                 state = AutoState.GET_TO_SCALE;
-                liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
                     scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
                 } else {
@@ -194,7 +207,7 @@ public class Robot extends TimedRobot {
                 break;
             case FAR_RIGHT_GET_TO_SCALE:
                 state = AutoState.GET_TO_SCALE;
-                liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
                     scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
                 } else {
@@ -228,6 +241,10 @@ public class Robot extends TimedRobot {
             case TURN_TO_ANGLE:
                 double turnSpeed = (turnAngle - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
+                if (Math.abs(turnSpeed) > Parameters.AUTO_MAX_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, turnSpeed);
+                }
+
                 if (Math.abs(turnAngle - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
                     robotDrive.stopMotor();
 
@@ -243,13 +260,37 @@ public class Robot extends TimedRobot {
                 if (leftDriveEncoder.getDistance() > Parameters.AUTO_POSITIONING_DISTANCE
                         || rightDriveEncoder.getDistance() > Parameters.AUTO_POSITIONING_DISTANCE) {
                     robotDrive.stopMotor();
-                    state = AutoState.DALEK_MODE;
+                    state = AutoState.TURN_TO_ZERO;
                 } else {
                     robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
-            case DALEK_MODE: // SEEK - LOCATE - DESTROY!
-                int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160 - 20; //off center
+            case TURN_TO_ZERO:
+                turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(turnSpeed) > Parameters.AUTO_MAX_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, turnSpeed);
+                }
+
+                if (Math.abs(0 - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
+                    robotDrive.stopMotor();
+                    state = AutoState.MOVE_TO_SWITCH; //TODO DALEK_MODE;
+                } else {
+                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                }
+                break;
+            case MOVE_TO_SWITCH:
+                int switchDistance = coprocessor.getSonarDistance();
+
+                if (switchDistance > 0 && switchDistance < 8) {
+                    robotDrive.stopMotor();
+                    state = AutoState.DEPOSIT_CUBE;
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+            /*case DALEK_MODE: // SEEK - LOCATE - DESTROY!
+                int visionTargetOffset = coprocessor.getVisionTargetCoord() - 160;
                 turnSpeed = ((double) visionTargetOffset) / 160;
 
                 int followDistance = coprocessor.getSonarDistance();
@@ -258,7 +299,7 @@ public class Robot extends TimedRobot {
                     followSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, followSpeed);
                 }
 
-                if (followDistance > 0 && followDistance < 12.5) { //Reached target... EXTERMINATE!
+                if (followDistance > 0 && followDistance < 10) { //Reached target... EXTERMINATE!
                     robotDrive.stopMotor();
                     state = AutoState.DEPOSIT_CUBE;
                 } else if (coprocessor.getVisionTargetCoord() < 400) { //todo consistent
@@ -267,12 +308,12 @@ public class Robot extends TimedRobot {
                     robotDrive.stopMotor();
                     state = AutoState.FAILSAFE_TURN_TO_ZERO;
                 }
-                break;
+                break;*/
             case DEPOSIT_CUBE:
                 if (autoChooser.getSelected() == Autonomous.CENTER_CUBE_DROP
                         || (autoChooser.getSelected() == Autonomous.LEFT_SIDE_CUBE_DROP && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT)
                         || (autoChooser.getSelected() == Autonomous.RIGHT_SIDE_CUBE_DROP && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT)) {
-                    if (liftSystem.hasReachedPosition(LiftSystem.LiftPosition.SCALE)) {
+                    if (liftSystem.getEncoder().getRaw() > LiftSystem.LiftPosition.SWITCH.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
                         robotDrive.arcadeDrive(0, 0);
 
                         clawSolenoid.set(true); //open
@@ -280,7 +321,7 @@ public class Robot extends TimedRobot {
                         leftDriveEncoder.reset();
                         rightDriveEncoder.reset();
 
-                        state = AutoState.BACK_UP_FROM_TARGET;
+                        state = AutoState.FINISHED; //TODO AutoState.BACK_UP_FROM_TARGET;
                     }
                 } else {
                     //Wrong side! Stop here
@@ -298,6 +339,10 @@ public class Robot extends TimedRobot {
                 break;
             case TURN_AWAY_FROM_TARGET:
                 turnSpeed = (Math.copySign(90, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(turnSpeed) > Parameters.AUTO_MAX_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, turnSpeed);
+                }
 
                 if (Math.abs(Math.copySign(90, turnAngle) - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
                     robotDrive.arcadeDrive(0, -turnSpeed, false);
@@ -323,6 +368,10 @@ public class Robot extends TimedRobot {
             case TURN_TO_ALLIANCE:
                 turnSpeed = (Math.copySign(180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
+                if (Math.abs(turnSpeed) > Parameters.AUTO_MAX_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, turnSpeed);
+                }
+
                 if (Math.abs(Math.copySign(180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
                     robotDrive.stopMotor();
 
@@ -344,16 +393,16 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case PAC_MAN_MODE:
-                int powerCubeOffset = coprocessor.getPowerCubeCoord() - 160 - 20; //off center
+                int powerCubeOffset = coprocessor.getPowerCubeCoord() - 160;
                 turnSpeed = ((double) powerCubeOffset) / 160;
 
-                followDistance = coprocessor.getSonarDistance();
-                followSpeed = ((double) followDistance) / 20;
+                int followDistance = coprocessor.getSonarDistance();
+                double followSpeed = ((double) followDistance) / 20;
                 if (Math.abs(followSpeed) > 0.6) {
                     followSpeed = Math.copySign(0.6, followSpeed);
                 }
 
-                if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it! - TODO consistent
+                if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it! - TODO consistent
                     robotDrive.stopMotor();
                     state = AutoState.EAT_CUBE;
                 } else if (coprocessor.getPowerCubeCoord() < 400) {
@@ -373,6 +422,10 @@ public class Robot extends TimedRobot {
             case FAILSAFE_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
+                if (Math.abs(turnSpeed) > Parameters.AUTO_MAX_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_MAX_SPEED, turnSpeed);
+                }
+
                 if (Math.abs(0 - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
                     robotDrive.stopMotor();
 
@@ -385,8 +438,8 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case FAILSAFE_DRIVE_FORWARD:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_BACKUP_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_BACKUP_DISTANCE) {
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_FAILSAFE_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_FAILSAFE_DISTANCE) {
                     robotDrive.stopMotor();
                     state = AutoState.FINISHED;
                 } else {
@@ -395,19 +448,20 @@ public class Robot extends TimedRobot {
                 break;
 
             // SCALE
-            case GET_TO_SCALE:
-                if (leftDriveEncoder.getDistance() < -scaleDistance
-                        || rightDriveEncoder.getDistance() < -scaleDistance) {
+            case GET_TO_SCALE: //TODO return to driving backwards
+                if (leftDriveEncoder.getDistance() > scaleDistance
+                        || rightDriveEncoder.getDistance() > scaleDistance) {
                     robotDrive.stopMotor();
-                    state = AutoState.FINISHED; //TODO drop cube?
+                    state = AutoState.FINISHED;
                 } else {
-                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
                 }
                 break;
 
             // FINISHED
             case FINISHED:
                 //Now we're done!
+                //robotDrive.arcadeDrive(0, 0); todo ?
                 break;
         }
 
@@ -433,17 +487,31 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-
-        if (Parameters.DRIVE_PID_ENABLED) {
-            double maxSpeed = inLowGear ? Parameters.PID_MAX_SPEED_LOW_GEAR : Parameters.PID_MAX_SPEED_HIGH_GEAR;
-
-            leftDriveController.setSetpoint(-driveStick.getY() * maxSpeed); //TODO implement steering wheel
-            rightDriveController.setSetpoint(-driveStick.getY() * maxSpeed);
+        if (Math.abs(ypr[2]) >= 30) { // TIPPING PROTECTION - OVERRIDE driver input TODO pitch or roll? See mount point of IMU
+            robotDrive.arcadeDrive(Math.copySign(0.4, ypr[2]), 0);
         } else {
-            robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+            if (Parameters.DRIVE_PID_ENABLED) { //TODO DO NOT USE THIS IS NOT COMPLETE
+                double maxSpeed = inLowGear ? Parameters.PID_MAX_SPEED_LOW_GEAR : Parameters.PID_MAX_SPEED_HIGH_GEAR;
+
+                leftDriveController.setSetpoint(-driveStick.getY() * maxSpeed); //TODO implement steering wheel
+                rightDriveController.setSetpoint(-driveStick.getY() * maxSpeed);
+            } else {
+                robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+            }
         }
 
         liftSystem.operateLift(operatorController);
+
+        // CLIMBER CONTROL
+        if (prajBox.getRawButton(1) && Math.abs(operatorController.getRawAxis(5)) > 0.2) {
+            if (prajBox.getRawButton(4)) { //Only allow backdrive if an extra button is being held
+                climbMotor.set(operatorController.getRawAxis(5));
+            } else {
+                climbMotor.set(-Math.abs(operatorController.getRawAxis(5)));
+            }
+        } else {
+            climbMotor.set(0);
+        }
 
         if (operatorController.getRawButton(2)) {
             System.out.println("Entering PAC MAN mode");
@@ -488,16 +556,16 @@ public class Robot extends TimedRobot {
             clawSolenoid.set(false); //closed
         }
 
-        if (operatorController.getRawButtonPressed(9)) {
+        if (operatorController.getRawButtonPressed(9)) { //TODO disable
             imu.setYaw(0, 0);
         }
 
-        if (operatorController.getRawButtonPressed(10)) {
+        if (operatorController.getRawButtonPressed(10)) { //TODO disable
             liftSystem.resetEncoder();
         }
 
         // AUTOMATIC SHIFTING
-        if (liftSystem.isAboveNoShiftThreshold() && !inLowGear) {
+        if (liftSystem.getEncoder().getRaw() > Parameters.LIFT_ENCODER_NO_SHIFT_THRESHOLD && !inLowGear) {
             inLowGear = true;
             shifterSolenoid.set(true);
             leftDriveController.setInputRange(-Parameters.PID_MAX_SPEED_LOW_GEAR, Parameters.PID_MAX_SPEED_LOW_GEAR);
@@ -520,7 +588,7 @@ public class Robot extends TimedRobot {
 
         //New Power Cube Eating Mode - PAC MAN!
         if (pacManMode) {
-            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160 - 20; //off center
+            int visionTargetOffset = coprocessor.getPowerCubeCoord() - 160;
             double turnSpeed = ((double) visionTargetOffset) / 160;
 
             int followDistance = coprocessor.getSonarDistance();
@@ -530,7 +598,7 @@ public class Robot extends TimedRobot {
             }
 
             System.out.println(coprocessor.getSonarDistance());
-            if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it!
+            if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it!
                 System.out.println("cube found - nomnomnom");
                 robotDrive.stopMotor();
                 clawSolenoid.set(false); //eat the cube
@@ -549,7 +617,10 @@ public class Robot extends TimedRobot {
     @Override
     public void disabledInit() {
         robotDrive.stopMotor();
+
         liftSystem.disable();
+
+        climbMotor.disable();
 
         pacManMode = false;
     }
@@ -561,15 +632,20 @@ public class Robot extends TimedRobot {
         RIGHT_SIDE_CUBE_DROP,
         CENTER_CUBE_DROP,
 
-        FAR_LEFT_GET_TO_SCALE,
-        FAR_RIGHT_GET_TO_SCALE
+        FAR_LEFT_GET_TO_SCALE, //TODO reimplement this!
+        FAR_RIGHT_GET_TO_SCALE //TODO these currently just cross the auto line instead
     }
 
     public enum AutoState {
         STANDARD_START,
         TURN_TO_ANGLE,
         MOVE_TO_POSITION,
+        TURN_TO_ZERO,
+
+        MOVE_TO_SWITCH,
+
         DALEK_MODE,
+
         DEPOSIT_CUBE,
         BACK_UP_FROM_TARGET,
         TURN_AWAY_FROM_TARGET,
