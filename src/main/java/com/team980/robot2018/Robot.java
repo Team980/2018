@@ -46,7 +46,6 @@ public class Robot extends TimedRobot {
 
     private SendableChooser<Autonomous> autoChooser;
     private int turnAngle;
-    private double scaleDistance;
     private AutoState state;
 
     private boolean inLowGear = true;
@@ -117,11 +116,12 @@ public class Robot extends TimedRobot {
 
         autoChooser = new SendableChooser<>();
         autoChooser.addDefault("Disabled", Autonomous.DISABLED);
-        autoChooser.addObject("Left Side - Cube Drop", Autonomous.LEFT_SIDE_CUBE_DROP);
-        autoChooser.addObject("Right Side - Cube Drop", Autonomous.RIGHT_SIDE_CUBE_DROP);
-        autoChooser.addObject("Center - Cube Drop", Autonomous.CENTER_CUBE_DROP);
-        autoChooser.addObject("Far Left - Get To Scale", Autonomous.FAR_LEFT_GET_TO_SCALE);
-        autoChooser.addObject("Far Right - Get To Scale", Autonomous.FAR_RIGHT_GET_TO_SCALE);
+        autoChooser.addObject("Left Side - SWITCH", Autonomous.LEFT_SIDE_SWITCH);
+        autoChooser.addObject("Right Side - SWITCH", Autonomous.RIGHT_SIDE_SWITCH);
+        autoChooser.addObject("Center - SWITCH", Autonomous.CENTER_SWITCH);
+        autoChooser.addObject("Far Left - SCALE", Autonomous.FAR_LEFT_SCALE);
+        autoChooser.addObject("Far Right - SCALE", Autonomous.FAR_RIGHT_SCALE);
+        autoChooser.addObject("Cross Auto Line", Autonomous.CROSS_AUTO_LINE);
         autoChooser.setName("Autonomous Chooser");
         LiveWindow.add(autoChooser); //This actually works
 
@@ -171,17 +171,17 @@ public class Robot extends TimedRobot {
         clawSolenoid.set(false); //closed
 
         switch (autoChooser.getSelected()) {
-            case LEFT_SIDE_CUBE_DROP:
+            case LEFT_SIDE_SWITCH:
                 state = AutoState.STANDARD_START;
                 liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 turnAngle = Parameters.AUTO_LEFT_SIDE_TURN_ANGLE;
                 break;
-            case RIGHT_SIDE_CUBE_DROP:
+            case RIGHT_SIDE_SWITCH:
                 state = AutoState.STANDARD_START;
                 liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 turnAngle = Parameters.AUTO_RIGHT_SIDE_TURN_ANGLE;
                 break;
-            case CENTER_CUBE_DROP:
+            case CENTER_SWITCH:
                 state = AutoState.STANDARD_START;
                 liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
                 switch (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR)) {
@@ -196,22 +196,20 @@ public class Robot extends TimedRobot {
                         break;
                 }
                 break;
-            case FAR_LEFT_GET_TO_SCALE:
-                state = AutoState.GET_TO_SCALE;
-                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
-                    scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
+            case FAR_LEFT_SCALE:
+                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE later in auto
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) { //TODO different states
+                    state = AutoState.GET_TO_SCALE;
                 } else {
-                    scaleDistance = Parameters.AUTO_OPPONENT_SCALE_DISTANCE;
+                    state = AutoState.DRIVE_FORWARD;
                 }
                 break;
-            case FAR_RIGHT_GET_TO_SCALE:
-                state = AutoState.GET_TO_SCALE;
-                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
-                    scaleDistance = Parameters.AUTO_ALLIANCE_SCALE_DISTANCE;
+            case FAR_RIGHT_SCALE:
+                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM); //TODO SCALE later in auto
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) { //TODO different states
+                    state = AutoState.GET_TO_SCALE;
                 } else {
-                    scaleDistance = Parameters.AUTO_OPPONENT_SCALE_DISTANCE;
+                    state = AutoState.DRIVE_FORWARD;
                 }
                 break;
             default:
@@ -310,9 +308,9 @@ public class Robot extends TimedRobot {
                 }
                 break;*/
             case DEPOSIT_CUBE:
-                if (autoChooser.getSelected() == Autonomous.CENTER_CUBE_DROP
-                        || (autoChooser.getSelected() == Autonomous.LEFT_SIDE_CUBE_DROP && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT)
-                        || (autoChooser.getSelected() == Autonomous.RIGHT_SIDE_CUBE_DROP && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT)) {
+                if (autoChooser.getSelected() == Autonomous.CENTER_SWITCH
+                        || (autoChooser.getSelected() == Autonomous.LEFT_SIDE_SWITCH && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT)
+                        || (autoChooser.getSelected() == Autonomous.RIGHT_SIDE_SWITCH && MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT)) {
                     if (liftSystem.getEncoder().getRaw() > LiftSystem.LiftPosition.SWITCH.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
                         robotDrive.arcadeDrive(0, 0);
 
@@ -448,9 +446,20 @@ public class Robot extends TimedRobot {
                 break;
 
             // SCALE
-            case GET_TO_SCALE: //TODO return to driving backwards
-                if (leftDriveEncoder.getDistance() > scaleDistance
-                        || rightDriveEncoder.getDistance() > scaleDistance) {
+            case GET_TO_SCALE:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_ALLIANCE_SCALE_DISTANCE
+                        || rightDriveEncoder.getDistance() >  Parameters.AUTO_ALLIANCE_SCALE_DISTANCE) {
+                    robotDrive.stopMotor();
+                    state = AutoState.FINISHED; //TODO put cube on scale
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+
+            // CROSS AUTO LINE
+            case DRIVE_FORWARD:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_DRIVE_FORWARD_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_DRIVE_FORWARD_DISTANCE) {
                     robotDrive.stopMotor();
                     state = AutoState.FINISHED;
                 } else {
@@ -628,12 +637,14 @@ public class Robot extends TimedRobot {
     public enum Autonomous {
         DISABLED,
 
-        LEFT_SIDE_CUBE_DROP,
-        RIGHT_SIDE_CUBE_DROP,
-        CENTER_CUBE_DROP,
+        LEFT_SIDE_SWITCH,
+        RIGHT_SIDE_SWITCH,
+        CENTER_SWITCH,
 
-        FAR_LEFT_GET_TO_SCALE, //TODO reimplement this!
-        FAR_RIGHT_GET_TO_SCALE //TODO these currently just cross the auto line instead
+        FAR_LEFT_SCALE,
+        FAR_RIGHT_SCALE,
+
+        CROSS_AUTO_LINE
     }
 
     public enum AutoState {
@@ -641,11 +652,8 @@ public class Robot extends TimedRobot {
         TURN_TO_ANGLE,
         MOVE_TO_POSITION,
         TURN_TO_ZERO,
-
         MOVE_TO_SWITCH,
-
-        DALEK_MODE,
-
+        //DALEK_MODE,
         DEPOSIT_CUBE,
         BACK_UP_FROM_TARGET,
         TURN_AWAY_FROM_TARGET,
@@ -659,6 +667,8 @@ public class Robot extends TimedRobot {
         FAILSAFE_DRIVE_FORWARD,
 
         GET_TO_SCALE,
+
+        DRIVE_FORWARD,
 
         FINISHED
     }

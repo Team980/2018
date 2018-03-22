@@ -81,7 +81,7 @@ public class Parameters {
     public static final int CLAW_SOLENOID_CHANNEL = 1;
 
     // AUTONOMOUS
-    public static final double AUTO_MAX_SPEED = 0.3;
+    public static final double AUTO_MAX_SPEED = 0.5;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 5.0;
@@ -91,8 +91,9 @@ public class Parameters {
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
-    public static final double AUTO_ALLIANCE_SCALE_DISTANCE = 7.5; //22; //TODO tune
-    public static final double AUTO_OPPONENT_SCALE_DISTANCE = 7.5; //18; //TODO on practice field
+    public static final double AUTO_ALLIANCE_SCALE_DISTANCE = 20; //TODO tune
+
+    public static final double AUTO_DRIVE_FORWARD_DISTANCE = 7.5;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
