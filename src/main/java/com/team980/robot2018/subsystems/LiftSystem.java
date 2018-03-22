@@ -28,10 +28,14 @@ public class LiftSystem {
         liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION));
         liftEncoder.setName("Lift System", "Lift Encoder");
 
-        position = LiftPosition.SCALE; //this should ALWAYS be true
+        position = LiftPosition.BOTTOM; //this should ALWAYS be true
         state = LiftState.STOPPED; //We don't want to move the lift right now!
 
         this.table = table;
+    }
+
+    public Encoder getEncoder() {
+        return liftEncoder;
     }
 
     public LiftPosition getPosition() {
@@ -39,30 +43,13 @@ public class LiftSystem {
     }
 
     public void setPosition(LiftPosition position) {
-        this.position = position;
 
-        if (liftEncoder.getDistance() < position.getDistance()) {
-            state = LiftState.MOVING_UP;
-        } else if (liftEncoder.getDistance() > position.getDistance()) {
-            state = LiftState.MOVING_DOWN;
-        } else {
-            state = LiftState.STOPPED;
-        }
+        this.position = position;
+        state = LiftState.MOVING_TO_POSITION;
     }
 
     public LiftState getState() {
         return state;
-    }
-
-    public boolean hasReachedPosition(LiftPosition position) {
-        switch (state) {
-            case MOVING_UP:
-                return liftEncoder.getDistance() > position.getDistance();
-            case MOVING_DOWN:
-                return liftEncoder.getDistance() < position.getDistance();
-            default:
-                return true;
-        }
     }
 
     public void updateData() {
@@ -85,21 +72,23 @@ public class LiftSystem {
     }
 
     public void operateLift() {
-        if (state == LiftState.MOVING_UP && !hasReachedPosition(position)
-                && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            upwardAccelerationCounter++;
-            double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
-            if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
-                liftMotor.set(speed);
+        if (state == LiftState.MOVING_TO_POSITION && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
+            if (liftEncoder.getDistance() < position.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+                upwardAccelerationCounter++;
+                double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
+                if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
+                    liftMotor.set(speed);
+                } else {
+                    liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+                }
+            } else if (liftEncoder.getDistance() > position.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+                upwardAccelerationCounter = 0;
+                liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
             } else {
-                liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
+                upwardAccelerationCounter = 0;
+                liftMotor.set(0);
             }
-        } else if (state == LiftState.MOVING_DOWN && !hasReachedPosition(position)
-                && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            upwardAccelerationCounter = 0;
-            liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
         } else {
-            state = LiftState.STOPPED;
             upwardAccelerationCounter = 0;
             liftMotor.set(0);
         }
@@ -112,6 +101,7 @@ public class LiftSystem {
 
     public enum LiftPosition {
         BOTTOM(Parameters.LIFT_ENCODER_BOTTOM_DISTANCE),
+        AUTO(Parameters.LIFT_ENCODER_AUTO_DISTANCE),
         SWITCH(Parameters.LIFT_ENCODER_SWITCH_DISTANCE),
         SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE);
 
@@ -127,8 +117,7 @@ public class LiftSystem {
     }
 
     public enum LiftState {
-        MOVING_UP,
-        MOVING_DOWN,
+        MOVING_TO_POSITION,
         STOPPED
     }
 }

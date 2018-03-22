@@ -37,7 +37,7 @@ wpi {
     wpilibVersion = "2018.4.1"
     ctreVersion = "5.2.2.0"
 
-    shuffleboardVersion = "1.2.2"
+    shuffleboardVersion = "1.3.1"
 }
 
 dependencies {

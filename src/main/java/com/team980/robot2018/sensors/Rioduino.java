@@ -53,9 +53,10 @@ public class Rioduino {
      * The center x-coordinate of the detected vision target
      * Ranges from zero to 319
      * -1 if no target is detected
+     * We invert this because Pixy is mounted UPSIDE DOWN
      */
     public int getVisionTargetCoord() {
-        return visionTargetCoord;
+        return 319 - visionTargetCoord;
     }
 
     /**
@@ -80,9 +81,10 @@ public class Rioduino {
      * The center x-coordinate of the largest (i.e. closest) detected power cube
      * Ranges from zero to 319
      * -1 if no cubes are detected
+     * We invert this because Pixy is mounted UPSIDE DOWN
      */
     public int getPowerCubeCoord() {
-        return powerCubeCoord;
+        return 319 - powerCubeCoord;
     }
 
     /**
