@@ -46,11 +46,11 @@ public class Parameters {
     public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
     public static final boolean INVERT_LIFT_ENCODER = false;
 
-    public static final double LIFT_ENCODER_BOTTOM_DISTANCE = -2.3;
-    public static final double LIFT_ENCODER_AUTO_DISTANCE = -1.0;
-    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.25;
-    public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = -0.02;
-    public static final double LIFT_ENCODER_SCALE_DISTANCE = 0.0;
+    public static final double LIFT_ENCODER_BOTTOM_DISTANCE = 0;
+    public static final double LIFT_ENCODER_AUTO_DISTANCE = 1.3;
+    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.05;
+    public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = 2.28;
+    public static final double LIFT_ENCODER_SCALE_DISTANCE = 2.3;
 
     // CLIMBER
     public static final int CLIMB_MOTOR_CAN_ID = 9;
@@ -73,8 +73,8 @@ public class Parameters {
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
-    public static final double AUTO_NULL_ZONE_DISTANCE = 20; //TODO
-    public static final double AUTO_APPROACH_DISTANCE = 2; //TODO
+    public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
+    public static final double AUTO_APPROACH_DISTANCE = 2.0;
 
     public static final double AUTO_DRIVE_FORWARD_DISTANCE = 7.5;
 
@@ -86,6 +86,6 @@ public class Parameters {
     public static final int AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE = 50;
     public static final int AUTO_CENTER_RIGHT_SWITCH_TURN_ANGLE = -50;
 
-    public static final int AUTO_LEFT_SCALE_TURN_ANGLE = 32; //TODO
-    public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = -32; //TODO
+    public static final int AUTO_LEFT_SCALE_TURN_ANGLE = 40;
+    public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = -40;
 }

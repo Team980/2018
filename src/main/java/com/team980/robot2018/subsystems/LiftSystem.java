@@ -25,7 +25,7 @@ public class LiftSystem {
         liftMotor.setName("Lift System", "Lift Motor");
 
         liftEncoder = new Encoder(Parameters.LIFT_ENCODER_DIO_CHANNEL_A, Parameters.LIFT_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LIFT_ENCODER, CounterBase.EncodingType.k4X);
-        liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION));
+        liftEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.LIFT_WHEEL_RADIUS / 12)) / (Constants.LIFT_ENCODER_PULSES_PER_REVOLUTION * Constants.LIFT_SYSTEM_GEAR_RATIO));
         liftEncoder.setName("Lift System", "Lift Encoder");
 
         position = LiftPosition.BOTTOM; //this should ALWAYS be true
@@ -43,7 +43,6 @@ public class LiftSystem {
     }
 
     public void setPosition(LiftPosition position) {
-
         this.position = position;
         state = LiftState.MOVING_TO_POSITION;
     }

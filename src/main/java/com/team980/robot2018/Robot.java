@@ -72,11 +72,11 @@ public class Robot extends TimedRobot {
         robotDrive.setName("Robot Drive");
 
         leftDriveEncoder = new Encoder(Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.LEFT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_LEFT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
-        leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        leftDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION * Constants.DRIVE_SYSTEM_GEAR_RATIO));
         leftDriveEncoder.setName("Drive Encoders", "Left");
 
         rightDriveEncoder = new Encoder(Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A, Parameters.RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B, Parameters.INVERT_RIGHT_DRIVE_ENCODER, CounterBase.EncodingType.k4X);
-        rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION));
+        rightDriveEncoder.setDistancePerPulse((2 * (Constants.PI) * (Constants.DRIVE_WHEEL_RADIUS / 12)) / (Constants.DRIVE_ENCODER_PULSES_PER_REVOLUTION * Constants.DRIVE_SYSTEM_GEAR_RATIO));
         rightDriveEncoder.setName("Drive Encoders", "Right");
 
         liftSystem = new LiftSystem(table);
@@ -422,9 +422,10 @@ public class Robot extends TimedRobot {
                     robotDrive.stopMotor();
                     liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
 
-                    state = AutoState.MOVE_TO_NULL_ZONE;
+                    state = AutoState.TURN_TO_SCALE;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                    double gyroTurnCorrection = ypr[0] / 45; //Keep the robot driving straight!
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, gyroTurnCorrection, false);
                 }
                 break;
             case TURN_TO_SCALE:
@@ -463,7 +464,17 @@ public class Robot extends TimedRobot {
                 leftDriveEncoder.reset();
                 rightDriveEncoder.reset();
 
-                state = AutoState.FINISHED; //TODO grab another cube
+                state = AutoState.BACK_UP_FROM_SCALE;
+                break;
+            case BACK_UP_FROM_SCALE:
+                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_APPROACH_DISTANCE
+                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_APPROACH_DISTANCE) {
+                    robotDrive.stopMotor();
+                    liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
+                    state = AutoState.FINISHED; //TODO grab another cube
+                } else {
+                    robotDrive.arcadeDrive(-Parameters.AUTO_MAX_SPEED, 0, false);
+                }
                 break;
 
             // CROSS AUTO LINE
@@ -660,6 +671,7 @@ public class Robot extends TimedRobot {
         TURN_TO_SCALE,
         APPROACH_SCALE,
         DEPOSIT_CUBE_ON_SCALE,
+        BACK_UP_FROM_SCALE,
 
         DRIVE_FORWARD,
 
