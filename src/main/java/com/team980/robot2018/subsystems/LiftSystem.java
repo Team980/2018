@@ -72,7 +72,8 @@ public class LiftSystem {
 
     public void operateLift() {
         if (state == LiftState.MOVING_TO_POSITION && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            if (liftEncoder.getDistance() < position.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+            if (liftEncoder.getDistance() < position.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND
+                    && liftEncoder.getDistance() < Parameters.LIFT_ENCODER_TOP_DISTANCE) {
                 upwardAccelerationCounter++;
                 double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
                 if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
@@ -80,7 +81,8 @@ public class LiftSystem {
                 } else {
                     liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
                 }
-            } else if (liftEncoder.getDistance() > position.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+            } else if (liftEncoder.getDistance() > position.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND
+                    && liftEncoder.getDistance() > Parameters.LIFT_ENCODER_BOTTOM_DISTANCE) {
                 upwardAccelerationCounter = 0;
                 liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
             } else {

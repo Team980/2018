@@ -48,9 +48,10 @@ public class Parameters {
 
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = 0;
     public static final double LIFT_ENCODER_AUTO_DISTANCE = 1.3;
-    public static final double LIFT_ENCODER_SWITCH_DISTANCE = -1.05;
+    public static final double LIFT_ENCODER_SWITCH_DISTANCE = 1.05;
     public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = 2.28;
     public static final double LIFT_ENCODER_SCALE_DISTANCE = 2.3;
+    public static final double LIFT_ENCODER_TOP_DISTANCE = 2.6; //Soft stop
 
     // CLIMBER
     public static final int CLIMB_MOTOR_CAN_ID = 9;
@@ -63,7 +64,8 @@ public class Parameters {
     // Solenoid channels are hardcoded.
 
     // AUTONOMOUS
-    public static final double AUTO_MAX_SPEED = 0.5;
+    public static final double AUTO_MAX_SPEED = 1.0;
+    public static final double AUTO_SLOW_SPEED = 0.5;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 3.0;
@@ -73,19 +75,22 @@ public class Parameters {
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
+    public static final double AUTO_SWITCH_DISTANCE = -1.0; //TODO
+
     public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
-    public static final double AUTO_APPROACH_DISTANCE = 2.0;
+    public static final double AUTO_APPROACH_DISTANCE = 3.5;
 
     public static final double AUTO_DRIVE_FORWARD_DISTANCE = 7.5;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
 
-    public static final int AUTO_LEFT_SWITCH_TURN_ANGLE = -32;
-    public static final int AUTO_RIGHT_SWITCH_TURN_ANGLE = 32;
     public static final int AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE = 50;
     public static final int AUTO_CENTER_RIGHT_SWITCH_TURN_ANGLE = -50;
 
-    public static final int AUTO_LEFT_SCALE_TURN_ANGLE = 40;
-    public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = -40;
+    public static final int AUTO_LEFT_SWITCH_TURN_ANGLE = -90;
+    public static final int AUTO_RIGHT_SWITCH_TURN_ANGLE = 90;
+
+    public static final int AUTO_LEFT_SCALE_TURN_ANGLE = -38;
+    public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = 38;
 }
