@@ -75,12 +75,12 @@ public class Parameters {
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
-    public static final double AUTO_SWITCH_DISTANCE = -1.0; //TODO
+    public static final double AUTO_SWITCH_DISTANCE = 13.0;
 
     public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
     public static final double AUTO_APPROACH_DISTANCE = 3.5;
 
-    public static final double AUTO_DRIVE_FORWARD_DISTANCE = 7.5;
+    public static final double AUTO_DRIVE_FORWARD_DISTANCE = 9.75;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;

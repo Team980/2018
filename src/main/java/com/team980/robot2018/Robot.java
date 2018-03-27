@@ -557,7 +557,8 @@ public class Robot extends TimedRobot {
                     robotDrive.stopMotor();
                     state = AutoState.FINISHED;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_SLOW_SPEED, 0, false);
+                    double gyroTurnCorrection = ypr[0] / 30; //Keep the robot driving straight!
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, gyroTurnCorrection, false);
                 }
                 break;
 
