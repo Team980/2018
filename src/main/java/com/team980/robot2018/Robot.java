@@ -46,6 +46,7 @@ public class Robot extends TimedRobot {
 
     private boolean inLowGear = true;
     private boolean pacManMode = false;
+    private boolean isTipping = false;
 
     @Override
     public void robotInit() {
@@ -208,6 +209,12 @@ public class Robot extends TimedRobot {
     public void autonomousPeriodic() {
         if (state != AutoState.FINISHED) {
             liftSystem.operateLift();
+
+            if (Math.abs(ypr[1]) >= 7) { // TIPPING PROTECTION - FAILSAFE AUTO TODO TEST 5 ON REAL FIELD/ROBOT
+                clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+
+                state = AutoState.C3_FAILSAFE_TIPPING_PROTECTION;
+            }
         }
 
         switch (state) {
@@ -302,6 +309,8 @@ public class Robot extends TimedRobot {
                     state = AutoState.FINISHED; //TODO AutoState.A2_BACK_UP_FROM_TARGET;
                 }
                 break;
+
+            // SWITCH CUBE 2: ELECTRIC BOOGALOO
             case A2_BACK_UP_FROM_TARGET:
                 if (leftDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE
                         || rightDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE) {
@@ -385,7 +394,7 @@ public class Robot extends TimedRobot {
                 state = AutoState.FINISHED;
                 break;
 
-            // SWITCH FAILSAFE
+            // SWITCH FAILSAFE: GET PAST THAT LINE
             case A3_FAILSAFE_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
@@ -550,7 +559,30 @@ public class Robot extends TimedRobot {
                 }
                 break;
 
-            // CROSS AUTO LINE
+            // SCALE CUBE TWO: SOMEHOW WE GOT THIS FAR
+
+            // SCALE FAILSAFE: TIPPING PROTECTION
+            case C3_FAILSAFE_TIPPING_PROTECTION:
+                if (Math.abs(ypr[1]) < 2) {
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.C3_FAILSAFE_BACK_AWAY;
+                } else {
+                    robotDrive.arcadeDrive(Math.copySign(0.3, ypr[1]), 0, false);
+                }
+                break;
+            case C3_FAILSAFE_BACK_AWAY:
+                if (leftDriveEncoder.getDistance() < -2.0
+                        || rightDriveEncoder.getDistance() < -2.0) {
+                    robotDrive.stopMotor();
+                    state = AutoState.FINISHED;
+                } else {
+                    robotDrive.arcadeDrive(-0.7, 0, false);
+                }
+                break;
+
+            // CROSS AUTO LINE BECAUSE WE'RE DESPERATE
             case D1_DRIVE_FORWARD:
                 if (leftDriveEncoder.getDistance() > Parameters.AUTO_DRIVE_FORWARD_DISTANCE
                         || rightDriveEncoder.getDistance() > Parameters.AUTO_DRIVE_FORWARD_DISTANCE) {
@@ -562,7 +594,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
 
-            // FINISHED
+            // FINISHED (REDUNDANT COMMENT)
             case FINISHED:
                 //Now we're done!
                 break;
@@ -584,10 +616,23 @@ public class Robot extends TimedRobot {
 
     @Override
     public void teleopPeriodic() {
-        if (Math.abs(ypr[1]) >= 30) { // TIPPING PROTECTION - OVERRIDE driver input
-            robotDrive.arcadeDrive(Math.copySign(0.4, ypr[2]), 0);
+        if (isTipping) { // TIPPING PROTECTION - OVERRIDE driver input
+            robotDrive.arcadeDrive(Math.copySign(0.7, ypr[1]), 0, false);
         } else {
             robotDrive.arcadeDrive(-driveStick.getY(), driveWheel.getX());
+        }
+
+        if (driveStick.getRawButton(2)) { //Driver override for tipping protection
+            isTipping = false;
+        } else {
+            if (Math.abs(ypr[1]) >= 10) { //Activate tipping protection
+                isTipping = true;
+
+                clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+                liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
+            } else if (Math.abs(ypr[1]) < 1 && isTipping) {
+                isTipping = false;
+            }
         }
 
         liftSystem.operateLift(operatorController);
@@ -753,6 +798,9 @@ public class Robot extends TimedRobot {
         C1_APPROACH_SCALE,
         C1_DEPOSIT_CUBE_ON_SCALE,
         C1_BACK_UP_FROM_SCALE,
+
+        C3_FAILSAFE_TIPPING_PROTECTION,
+        C3_FAILSAFE_BACK_AWAY,
 
         D1_DRIVE_FORWARD,
 
