@@ -306,11 +306,11 @@ public class Robot extends TimedRobot {
                     leftDriveEncoder.reset();
                     rightDriveEncoder.reset();
 
-                    state = AutoState.FINISHED; //TODO AutoState.A2_BACK_UP_FROM_TARGET;
+                    state = AutoState.A2_BACK_UP_FROM_TARGET;
                 }
                 break;
 
-            // SWITCH CUBE 2: ELECTRIC BOOGALOO
+            // SWITCH CUBE 2: ELECTRIC BOOGALOO TODO
             case A2_BACK_UP_FROM_TARGET:
                 if (leftDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE
                         || rightDriveEncoder.getDistance() < -Parameters.AUTO_STARTING_DISTANCE) {
@@ -377,11 +377,10 @@ public class Robot extends TimedRobot {
                     followSpeed = Math.copySign(0.6, followSpeed);
                 }
 
-                System.out.println(coprocessor.getSonarDistance());
-                if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it! - TODO consistent
+                if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 10) { //Cube in mouth... eat it! - TODO consistent
                     robotDrive.stopMotor();
                     state = AutoState.A2_EAT_CUBE;
-                } else if (coprocessor.getPowerCubeCoord() < 400) {
+                } else if (coprocessor.getPowerCubeCoord() >= 0 && coprocessor.getPowerCubeCoord() < 400) {
                     robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
                 } else {
                     robotDrive.stopMotor();
@@ -727,16 +726,16 @@ public class Robot extends TimedRobot {
             }
 
             System.out.println(coprocessor.getSonarDistance());
-            if (coprocessor.getSonarDistance() < 15) { //Cube in mouth... eat it!
-                System.out.println("cube found - nomnomnom");
+            if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 10) { //Cube in mouth... eat it!
+                //System.out.println("cube found - nomnomnom");
                 robotDrive.stopMotor();
                 clawSolenoid.set(DoubleSolenoid.Value.kReverse); //eat the cube
                 pacManMode = false;
-            } else if (coprocessor.getPowerCubeCoord() < 400) {
-                System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
+            } else if (coprocessor.getPowerCubeCoord() >= 0 && coprocessor.getPowerCubeCoord() < 400) {
+                //System.out.println("Following at " + followSpeed + "; turning at " + turnSpeed);
                 robotDrive.arcadeDrive(followSpeed, turnSpeed, false);
             } else {
-                System.out.println("No target found, Stopping");
+                //System.out.println("No target found, Stopping");
                 robotDrive.stopMotor();
                 pacManMode = false;
             }
