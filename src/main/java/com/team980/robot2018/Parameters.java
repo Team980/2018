@@ -66,6 +66,7 @@ public class Parameters {
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 1.0;
     public static final double AUTO_SLOW_SPEED = 0.5;
+    public static final double AUTO_SUPER_SLOW_SPEED = 0.25;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 3.0;
@@ -77,6 +78,8 @@ public class Parameters {
 
     public static final double AUTO_SWITCH_DISTANCE = 13.0;
 
+    public static final double AUTO_PAST_SWITCH_SHORT_DISTANCE = 6.0;
+
     public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
     public static final double AUTO_APPROACH_DISTANCE = 3.5;
 
@@ -84,6 +87,9 @@ public class Parameters {
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
+
+    public static final int AUTO_TIP_CORRECTION_DELAY = 100; //in milliseconds
+    public static final int AUTO_CUBE_DROP_DELAY = 400; //in milliseconds
 
     public static final int AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE = 50;
     public static final int AUTO_CENTER_RIGHT_SWITCH_TURN_ANGLE = -50;
