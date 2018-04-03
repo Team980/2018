@@ -45,6 +45,10 @@ public class LiftSystem {
     public void setPosition(LiftPosition position) {
         this.position = position;
         state = LiftState.MOVING_TO_POSITION;
+
+        if (position == LiftPosition.HOLD_CURRENT) {
+            LiftPosition.heldPosition = liftEncoder.getDistance();
+        }
     }
 
     public LiftState getState() {
@@ -104,16 +108,27 @@ public class LiftSystem {
         BOTTOM(Parameters.LIFT_ENCODER_BOTTOM_DISTANCE),
         AUTO(Parameters.LIFT_ENCODER_AUTO_DISTANCE),
         SWITCH(Parameters.LIFT_ENCODER_SWITCH_DISTANCE),
-        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE);
+        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE),
+
+        /**
+         * Used for custom hold-at button
+         */
+        HOLD_CURRENT(-1);
 
         private double distance;
+
+        private static double heldPosition;
 
         LiftPosition(double distance) {
             this.distance = distance;
         }
 
         public double getDistance() {
-            return distance;
+            if (this == HOLD_CURRENT) {
+                return heldPosition;
+            } else {
+                return distance;
+            }
         }
     }
 

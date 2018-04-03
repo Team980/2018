@@ -789,7 +789,7 @@ public class Robot extends TimedRobot {
         }
 
         if (operatorController.getRawButton(6)) {
-            liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+            liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
         }
 
         if (operatorController.getRawButton(1)) {
@@ -797,7 +797,7 @@ public class Robot extends TimedRobot {
         }
 
         if (operatorController.getRawButton(5)) {
-            liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
+            liftSystem.setPosition(LiftSystem.LiftPosition.HOLD_CURRENT); //huehuehue
         }
 
         if (operatorController.getRawAxis(2) > 0.9) {
