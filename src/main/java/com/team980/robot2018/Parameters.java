@@ -48,14 +48,14 @@ public class Parameters {
     public static final double LIFT_MOTOR_MIN_UPWARD_SPEED = 0.1;
     public static final double LIFT_MOTOR_UPWARD_ACCELERATION = 0.04;
 
-    public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 0.85;
+    public static final double LIFT_MOTOR_MAX_UPWARD_SPEED = 1.0;
     public static final double LIFT_MOTOR_MAX_DOWNWARD_SPEED = 0.7;
 
     public static final double LIFT_MOTOR_MAX_MANUAL_SPEED = 0.99;
 
     public static final double LIFT_MOTOR_CURRENT_THRESHOLD = 20.0;
 
-    public static final int LIFT_SYSTEM_POSITION_DEADBAND = 2000;
+    public static final int LIFT_SYSTEM_POSITION_DEADBAND = 6000;
 
     // LIFT ENCODER
     public static final int LIFT_ENCODER_DIO_CHANNEL_A = 1;
@@ -66,8 +66,8 @@ public class Parameters {
     public static final double LIFT_ENCODER_AUTO_DISTANCE = 54000;
     public static final double LIFT_ENCODER_SWITCH_DISTANCE = 58000; //Used in teleop //todo tune and increase by 1ft?
     public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = 67000;
-    public static final double LIFT_ENCODER_SCALE_DISTANCE = 182000;
-    //public static final double LIFT_ENCODER_TOP_DISTANCE = 187000; //TODO soft stop?
+    public static final double LIFT_ENCODER_SCALE_DISTANCE = 188000;
+    public static final double LIFT_ENCODER_TOP_DISTANCE = 190000; //soft stop
 
     // CLIMBER
     public static final int CLIMB_MOTOR_CAN_ID = 0;
@@ -81,26 +81,39 @@ public class Parameters {
     public static final int CLAW_SOLENOID_CHANNEL = 1;
 
     // AUTONOMOUS
-    public static final double AUTO_MAX_SPEED = 0.5;
+    public static final double AUTO_MAX_SPEED = 1.0;
+    public static final double AUTO_SLOW_SPEED = 0.35;
+    public static final double AUTO_SUPER_SLOW_SPEED = 0.125;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 5.0;
 
-    public static final double AUTO_PAST_TARGET_DISTANCE = 2.5; //TODO tune
-    public static final double AUTO_PAST_SWITCH_DISTANCE = 7.5; //TODO and re-enable
+    public static final double AUTO_PAST_TARGET_DISTANCE = 2.5;
+    public static final double AUTO_PAST_SWITCH_DISTANCE = 7.5;
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
-    public static final double AUTO_ALLIANCE_SCALE_DISTANCE = 20; //TODO tune
+    public static final double AUTO_SWITCH_DISTANCE = 13.0;
 
-    public static final double AUTO_DRIVE_FORWARD_DISTANCE = 7.5;
+    public static final double AUTO_PAST_SWITCH_SHORT_DISTANCE = 6.0;
+
+    public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
+    public static final double AUTO_APPROACH_DISTANCE = 3.2;
+
+    public static final double AUTO_DRIVE_FORWARD_DISTANCE = 9.75;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
 
-    public static final int AUTO_LEFT_SIDE_TURN_ANGLE = -32;
-    public static final int AUTO_RIGHT_SIDE_TURN_ANGLE = 32;
-    public static final int AUTO_CENTER_LEFT_TURN_ANGLE = 50; //TODO tune these
-    public static final int AUTO_CENTER_RIGHT_TURN_ANGLE = -50; //TODO on practice field
+    public static final int AUTO_TIP_CORRECTION_DELAY = 100; //in milliseconds
+    public static final int AUTO_CUBE_DROP_DELAY = 400; //in milliseconds
 
+    public static final int AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE = 50;
+    public static final int AUTO_CENTER_RIGHT_SWITCH_TURN_ANGLE = -50;
+
+    public static final int AUTO_LEFT_SWITCH_TURN_ANGLE = -90;
+    public static final int AUTO_RIGHT_SWITCH_TURN_ANGLE = 90;
+
+    public static final int AUTO_LEFT_SCALE_TURN_ANGLE = -38;
+    public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = 38;
 }

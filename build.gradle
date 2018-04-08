@@ -21,7 +21,7 @@ deploy {
     targets {
         target("roborio", RoboRIO) {
             team = TEAM
-            //addresses << '169.254.198.12' //In order of preference
+            addresses << '169.254.198.12' //In order of preference
         }
     }
     artifacts {
@@ -35,9 +35,9 @@ deploy {
 // Sometimes these may need to be overridden if a newer version is desired
 wpi {
     wpilibVersion = "2018.4.1"
-    ctreVersion = "5.2.2.0"
+    ctreVersion = "5.3.1.0"
 
-    shuffleboardVersion = "1.2.2"
+    shuffleboardVersion = "1.3.1"
 }
 
 dependencies {

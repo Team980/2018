@@ -43,6 +43,12 @@ public class LiftSystem {
     public void setPosition(LiftPosition position) {
         this.position = position;
         state = LiftState.MOVING_TO_POSITION;
+
+        if (position == LiftPosition.HOLD_CURRENT) {
+            LiftPosition.heldPosition = liftEncoder.getRaw();
+        } else {
+            LiftPosition.heldPosition = -1;
+        }
     }
 
     public LiftState getState() {
@@ -52,6 +58,7 @@ public class LiftSystem {
     public void updateData() {
         table.getSubTable("Lift System").getEntry("Lift Position").setString(position.name());
         table.getSubTable("Lift System").getEntry("Raw Encoder Position").setNumber(liftEncoder.getRaw());
+        table.getSubTable("Lift System").getEntry("Held Position").setNumber(LiftPosition.heldPosition);
         table.getSubTable("Lift System").getEntry("Lift State").setString(state.name());
         table.getSubTable("Lift System").getEntry("Lift Motor Current").setNumber(liftMotor.getOutputCurrent());
     }
@@ -71,7 +78,8 @@ public class LiftSystem {
 
     public void operateLift() {
         if (state == LiftState.MOVING_TO_POSITION && liftMotor.getOutputCurrent() < Parameters.LIFT_MOTOR_CURRENT_THRESHOLD) {
-            if (liftEncoder.getRaw() < position.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+            if (liftEncoder.getRaw() < position.getDistance()
+                    && liftEncoder.getRaw() < Parameters.LIFT_ENCODER_TOP_DISTANCE) {
                 upwardAccelerationCounter++;
                 double speed = Parameters.LIFT_MOTOR_MIN_UPWARD_SPEED + (Parameters.LIFT_MOTOR_UPWARD_ACCELERATION * upwardAccelerationCounter);
                 if (speed < Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED) {
@@ -79,7 +87,8 @@ public class LiftSystem {
                 } else {
                     liftMotor.set(Parameters.LIFT_MOTOR_MAX_UPWARD_SPEED);
                 }
-            } else if (liftEncoder.getRaw() > position.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+            } else if (liftEncoder.getRaw() > position.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND
+                    && liftEncoder.getRaw() > Parameters.LIFT_ENCODER_BOTTOM_DISTANCE) {
                 upwardAccelerationCounter = 0;
                 liftMotor.set(-Parameters.LIFT_MOTOR_MAX_DOWNWARD_SPEED);
             } else {
@@ -101,16 +110,27 @@ public class LiftSystem {
         BOTTOM(Parameters.LIFT_ENCODER_BOTTOM_DISTANCE),
         AUTO(Parameters.LIFT_ENCODER_AUTO_DISTANCE),
         SWITCH(Parameters.LIFT_ENCODER_SWITCH_DISTANCE),
-        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE);
+        SCALE(Parameters.LIFT_ENCODER_SCALE_DISTANCE),
+
+        /**
+         * Used for custom hold-at button
+         */
+        HOLD_CURRENT(-1);
 
         private double distance;
+
+        private static double heldPosition;
 
         LiftPosition(double distance) {
             this.distance = distance;
         }
 
         public double getDistance() {
-            return distance;
+            if (this == HOLD_CURRENT) {
+                return heldPosition;
+            } else {
+                return distance;
+            }
         }
     }
 
