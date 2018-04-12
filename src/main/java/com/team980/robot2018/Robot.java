@@ -180,10 +180,19 @@ public class Robot extends TimedRobot {
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.C1_MOVE_TO_NULL_ZONE;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
+
+                    inLowGear = false;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //HIGH GEAR
                 } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to LEFT SIDE SWITCH
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
-                } else { //Everything is bad
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) { //Cross over to the other scale!
+                    state = AutoState.C4_MOVE_PAST_SWITCH;
+                    turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
+
+                    inLowGear = false;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //HIGH GEAR
+                } else { //Should be impossible
                     state = AutoState.D1_DRIVE_FORWARD;
                 }
                 break;
@@ -191,10 +200,19 @@ public class Robot extends TimedRobot {
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.C1_MOVE_TO_NULL_ZONE;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
+
+                    inLowGear = false;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //HIGH GEAR
                 } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to RIGHT SIDE SWITCH
                     turnAngle = Parameters.AUTO_RIGHT_SWITCH_TURN_ANGLE;
-                } else { //Everything is bad
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) { //Cross over to the other scale!
+                    state = AutoState.C4_MOVE_PAST_SWITCH;
+                    turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
+
+                    inLowGear = false;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kReverse); //HIGH GEAR
+                } else { //Should be impossible
                     state = AutoState.D1_DRIVE_FORWARD;
                 }
                 break;
@@ -211,7 +229,10 @@ public class Robot extends TimedRobot {
         if (state != AutoState.FINISHED && !isTipping) {
             liftSystem.operateLift();
 
-            if (Math.abs(ypr[1]) >= 7) { // TIPPING PROTECTION - FAILSAFE AUTO TODO TEST 5 ON REAL FIELD/ROBOT
+            if (Math.abs(ypr[1]) >= 7
+                    && state != AutoState.C1_MOVE_TO_NULL_ZONE
+                    && state != AutoState.C4_MOVE_PAST_SWITCH
+                    && state != AutoState.C4_CROSS_FIELD) { // TIPPING PROTECTION - FAILSAFE AUTO TODO TEST 5 ON REAL FIELD/ROBOT
                 clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
 
                 isTipping = true;
@@ -538,19 +559,24 @@ public class Robot extends TimedRobot {
                     robotDrive.stopMotor();
                     liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
 
+                    inLowGear = true;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+
                     state = AutoState.C1_TURN_TO_SCALE;
                 } else {
                     double approachSpeed;
                     if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.75
                             || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.75) { //Only slow down in last 25% of run
-                        approachSpeed = Parameters.AUTO_MAX_SPEED - ((leftDriveEncoder.getDistance() - (Parameters.AUTO_NULL_ZONE_DISTANCE * 0.75))
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED * ((Parameters.AUTO_NULL_ZONE_DISTANCE - leftDriveEncoder.getDistance())
                                 / (Parameters.AUTO_NULL_ZONE_DISTANCE * 0.25));
 
-                        if (approachSpeed < Parameters.AUTO_SLOW_SPEED) {
-                            approachSpeed = Parameters.AUTO_SLOW_SPEED;
+                        if (approachSpeed > Parameters.AUTO_HIGH_GEAR_MAX_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
+                        } else if (approachSpeed < Parameters.AUTO_HIGH_GEAR_MIN_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MIN_SPEED;
                         }
                     } else {
-                        approachSpeed = Parameters.AUTO_MAX_SPEED;
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
                     }
 
                     double gyroTurnCorrection = ypr[0] / 30; //Keep the robot driving straight!
@@ -668,6 +694,145 @@ public class Robot extends TimedRobot {
                     state = AutoState.FINISHED;
                 } else {
                     robotDrive.arcadeDrive(-0.2, 0, false);
+                }
+                break;
+
+            // CROSS OVER AUTONOMOUS
+            case C4_MOVE_PAST_SWITCH:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE) {
+                    robotDrive.stopMotor();
+
+                    state = AutoState.C4_TURN_TO_CROSS_FIELD;
+                } else {
+                    double approachSpeed;
+                    if (leftDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE * 0.75
+                            || rightDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE * 0.75) { //Only slow down in last 25% of run
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED * ((Parameters.AUTO_FIELD_RUN_DISTANCE - leftDriveEncoder.getDistance())
+                                / (Parameters.AUTO_FIELD_RUN_DISTANCE * 0.25));
+
+                        if (approachSpeed > Parameters.AUTO_HIGH_GEAR_MAX_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
+                        } else if (approachSpeed < Parameters.AUTO_HIGH_GEAR_MIN_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MIN_SPEED;
+                        }
+
+                    } else {
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
+                    }
+
+                    double gyroTurnCorrection = ypr[0] / 30; //Keep the robot driving straight!
+                    robotDrive.arcadeDrive(approachSpeed, gyroTurnCorrection, false);
+                }
+                break;
+            case C4_TURN_TO_CROSS_FIELD:
+                turnSpeed = (Math.copySign(90, -turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(turnSpeed) > Parameters.AUTO_SLOW_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_SLOW_SPEED, turnSpeed);
+                }
+
+                if (Math.abs(Math.copySign(90, -turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
+                    robotDrive.stopMotor();
+
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.C4_CROSS_FIELD;
+                } else {
+                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                }
+                break;
+            case C4_CROSS_FIELD:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE) {
+                    robotDrive.stopMotor();
+
+                    inLowGear = true;
+                    shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+
+                    state = AutoState.C4_TURN_TO_NULL_ZONE;
+                } else {
+                    double approachSpeed;
+                    if (leftDriveEncoder.getDistance() > Parameters.AUTO_CROSS_FIELD_DISTANCE * 0.75
+                            || rightDriveEncoder.getDistance() > Parameters.AUTO_CROSS_FIELD_DISTANCE * 0.75) { //Only slow down in last 25% of run
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED * ((Parameters.AUTO_CROSS_FIELD_DISTANCE - leftDriveEncoder.getDistance())
+                                / (Parameters.AUTO_CROSS_FIELD_DISTANCE * 0.25));
+
+                        if (approachSpeed > Parameters.AUTO_HIGH_GEAR_MAX_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
+                        } else if (approachSpeed < Parameters.AUTO_HIGH_GEAR_MIN_SPEED) {
+                            approachSpeed = Parameters.AUTO_HIGH_GEAR_MIN_SPEED;
+                        }
+                    } else {
+                        approachSpeed = Parameters.AUTO_HIGH_GEAR_MAX_SPEED;
+                    }
+
+                    double gyroTurnCorrection = (ypr[0] - Math.copySign(90, -turnAngle)) / 30; //Keep the robot driving straight!
+                    robotDrive.arcadeDrive(approachSpeed, gyroTurnCorrection, false);
+                }
+                break;
+            case C4_TURN_TO_NULL_ZONE:
+                turnSpeed = (Math.copySign(90, -turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+
+                if (Math.abs(turnSpeed) > Parameters.AUTO_SLOW_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_SLOW_SPEED, turnSpeed);
+                }
+
+                if (Math.abs(Math.copySign(90, -turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
+                    robotDrive.stopMotor();
+
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.C4_MOVE_TO_NULL_ZONE;
+                } else {
+                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                }
+                break;
+            case C4_MOVE_TO_NULL_ZONE:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_SHORT_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_SHORT_DISTANCE) {
+                    robotDrive.stopMotor();
+                    liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
+
+                    state = AutoState.C4_APPROACH_SCALE;
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                }
+                break;
+            case C4_APPROACH_SCALE:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_APPROACH_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_APPROACH_DISTANCE) {
+                    robotDrive.stopMotor();
+                    loopCounter = 0;
+                    state = AutoState.C4_DEPOSIT_CUBE_ON_SCALE;
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_SLOW_SPEED, 0, false);
+                }
+                break;
+            case C4_DEPOSIT_CUBE_ON_SCALE:
+                robotDrive.arcadeDrive(0, 0);
+
+                clawSolenoid.set(DoubleSolenoid.Value.kForward); //open
+
+                if (loopCounter >= Parameters.AUTO_CUBE_DROP_DELAY / 20) {
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
+                    state = AutoState.C4_BACK_UP_FROM_SCALE;
+                } else {
+                    loopCounter++;
+                }
+                break;
+            case C4_BACK_UP_FROM_SCALE:
+                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_APPROACH_DISTANCE
+                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_APPROACH_DISTANCE) {
+                    robotDrive.stopMotor();
+                    liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
+                    state = AutoState.C2_TURN_TO_SWITCH;
+                } else {
+                    robotDrive.arcadeDrive(-Parameters.AUTO_SUPER_SLOW_SPEED, 0, false);
                 }
                 break;
 
@@ -817,7 +982,15 @@ public class Robot extends TimedRobot {
         }
 
         // AUTOMATIC SHIFTING
-        if (liftSystem.getEncoder().getDistance() > Parameters.LIFT_ENCODER_NO_SHIFT_THRESHOLD && !inLowGear) { //hack shift limit
+        if (prajBox.getRawButton(2) || prajBox.getRawButton(3)) { //manual override
+            if (prajBox.getRawButton(2) && inLowGear) {
+                inLowGear = false;
+                shifterSolenoid.set(DoubleSolenoid.Value.kReverse);
+            } else if (prajBox.getRawButton(3) && !inLowGear) {
+                inLowGear = true;
+                shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+            }
+        } else if (liftSystem.getEncoder().getDistance() > Parameters.LIFT_ENCODER_NO_SHIFT_THRESHOLD && !inLowGear) { //hack shift limit
             inLowGear = true;
             shifterSolenoid.set(DoubleSolenoid.Value.kForward);
         } else {
@@ -924,6 +1097,15 @@ public class Robot extends TimedRobot {
         C3_FAILSAFE_DELAY,
         C3_FAILSAFE_TIP_CORRECTION,
         C3_FAILSAFE_BACK_AWAY,
+
+        C4_MOVE_PAST_SWITCH,
+        C4_TURN_TO_CROSS_FIELD,
+        C4_CROSS_FIELD,
+        C4_TURN_TO_NULL_ZONE,
+        C4_MOVE_TO_NULL_ZONE,
+        C4_APPROACH_SCALE,
+        C4_DEPOSIT_CUBE_ON_SCALE,
+        C4_BACK_UP_FROM_SCALE,
 
         D1_DRIVE_FORWARD,
 
