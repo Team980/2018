@@ -22,8 +22,8 @@ public class Parameters {
     public static final int LEFT_DRIVE_ENCODER_DIO_CHANNEL_B = 1;
     public static final boolean INVERT_LEFT_DRIVE_ENCODER = false;
 
-    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A = 2;
-    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 3;
+    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_A = 8;
+    public static final int RIGHT_DRIVE_ENCODER_DIO_CHANNEL_B = 9;
     public static final boolean INVERT_RIGHT_DRIVE_ENCODER = true;
 
     // LIFT SYSTEM
@@ -42,8 +42,8 @@ public class Parameters {
     public static final double LIFT_SYSTEM_POSITION_DEADBAND = 0.01; //TODO configure
 
     // LIFT ENCODER
-    public static final int LIFT_ENCODER_DIO_CHANNEL_A = 8;
-    public static final int LIFT_ENCODER_DIO_CHANNEL_B = 9;
+    public static final int LIFT_ENCODER_DIO_CHANNEL_A = 2;
+    public static final int LIFT_ENCODER_DIO_CHANNEL_B = 3;
     public static final boolean INVERT_LIFT_ENCODER = false;
 
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = 0;
@@ -64,6 +64,9 @@ public class Parameters {
     // Solenoid channels are hardcoded.
 
     // AUTONOMOUS
+    public static final double AUTO_HIGH_GEAR_MAX_SPEED = 0.75;
+    public static final double AUTO_HIGH_GEAR_MIN_SPEED = 0.2;
+
     public static final double AUTO_MAX_SPEED = 1.0;
     public static final double AUTO_SLOW_SPEED = 0.5;
     public static final double AUTO_SUPER_SLOW_SPEED = 0.25;
@@ -82,6 +85,10 @@ public class Parameters {
 
     public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
     public static final double AUTO_APPROACH_DISTANCE = 3.5;
+
+    public static final double AUTO_FIELD_RUN_DISTANCE = 18.2;
+    public static final double AUTO_CROSS_FIELD_DISTANCE = 12.5;
+    public static final double AUTO_DIRECT_APPROACH_DISTANCE = 5.5;
 
     public static final double AUTO_DRIVE_FORWARD_DISTANCE = 9.75;
 

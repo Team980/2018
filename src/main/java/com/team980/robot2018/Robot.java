@@ -744,12 +744,14 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C4_CROSS_FIELD:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE) {
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_CROSS_FIELD_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_CROSS_FIELD_DISTANCE) {
                     robotDrive.stopMotor();
 
                     inLowGear = true;
                     shifterSolenoid.set(DoubleSolenoid.Value.kForward);
+
+                    liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
 
                     state = AutoState.C4_TURN_TO_NULL_ZONE;
                 } else {
@@ -773,37 +775,28 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C4_TURN_TO_NULL_ZONE:
-                turnSpeed = (Math.copySign(90, -turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+                turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
                 if (Math.abs(turnSpeed) > Parameters.AUTO_SLOW_SPEED) {
                     turnSpeed = Math.copySign(Parameters.AUTO_SLOW_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(Math.copySign(90, -turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
-                    robotDrive.stopMotor();
-
-                    leftDriveEncoder.reset();
-                    rightDriveEncoder.reset();
-
-                    state = AutoState.C4_MOVE_TO_NULL_ZONE;
-                } else {
+                if (Math.abs(0 - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) {
                     robotDrive.arcadeDrive(0, -turnSpeed, false);
-                }
-                break;
-            case C4_MOVE_TO_NULL_ZONE:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_SHORT_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_SHORT_DISTANCE) {
-                    robotDrive.stopMotor();
-                    liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
-
-                    state = AutoState.C4_APPROACH_SCALE;
                 } else {
-                    robotDrive.arcadeDrive(Parameters.AUTO_MAX_SPEED, 0, false);
+                    robotDrive.arcadeDrive(0, 0);
+
+                    if (liftSystem.getEncoder().getDistance() > LiftSystem.LiftPosition.SCALE.getDistance() - Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
+                        leftDriveEncoder.reset();
+                        rightDriveEncoder.reset();
+
+                        state = AutoState.C4_APPROACH_SCALE;
+                    }
                 }
                 break;
             case C4_APPROACH_SCALE:
-                if (leftDriveEncoder.getDistance() > Parameters.AUTO_APPROACH_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_APPROACH_DISTANCE) {
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_DIRECT_APPROACH_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_DIRECT_APPROACH_DISTANCE) {
                     robotDrive.stopMotor();
                     loopCounter = 0;
                     state = AutoState.C4_DEPOSIT_CUBE_ON_SCALE;
