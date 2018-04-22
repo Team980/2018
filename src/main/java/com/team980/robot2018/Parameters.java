@@ -63,7 +63,7 @@ public class Parameters {
     public static final boolean INVERT_LIFT_ENCODER = false;
 
     public static final double LIFT_ENCODER_BOTTOM_DISTANCE = 0;
-    public static final double LIFT_ENCODER_AUTO_DISTANCE = 54000;
+    public static final double LIFT_ENCODER_AUTO_DISTANCE = 61000;
     public static final double LIFT_ENCODER_SWITCH_DISTANCE = 58000; //Used in teleop //todo tune and increase by 1ft?
     public static final double LIFT_ENCODER_NO_SHIFT_THRESHOLD = 67000;
     public static final double LIFT_ENCODER_SCALE_DISTANCE = 188000;
@@ -82,31 +82,47 @@ public class Parameters {
 
     // AUTONOMOUS
     public static final double AUTO_MAX_SPEED = 1.0;
-    public static final double AUTO_SLOW_SPEED = 0.35;
-    public static final double AUTO_SUPER_SLOW_SPEED = 0.125;
+
+    public static final double AUTO_SWITCH_SPEED = 0.75;
+    public static final double AUTO_SWITCH_MIN_SPEED = 0.30;
+
+    public static final double AUTO_SCALE_SPEED = 0.45;
+    public static final double AUTO_SCALE_MIN_SPEED = 0.30;
+
+    public static final double AUTO_HIGH_GEAR_SPEED = 0.60;
+    public static final double AUTO_HIGH_GEAR_MIN_SPEED = 0.30;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
-    public static final double AUTO_POSITIONING_DISTANCE = 5.0;
+    public static final double AUTO_POSITIONING_DISTANCE = 6.5;
+    public static final double AUTO_SWITCH_APPROACH_DISTANCE = 7.0;
 
-    public static final double AUTO_PAST_TARGET_DISTANCE = 2.5;
-    public static final double AUTO_PAST_SWITCH_DISTANCE = 7.5;
+    public static final double AUTO_PAST_TARGET_DISTANCE = 5; //TODO used to be 2.5
+    public static final double AUTO_PAST_SWITCH_DISTANCE = 9.5; //TODO used to be 7.5
 
     public static final double AUTO_FAILSAFE_DISTANCE = 5.0;
 
     public static final double AUTO_SWITCH_DISTANCE = 13.0;
+    public static final double AUTO_SWITCH_SIDE_APPROACH_DISTANCE = 3.0;
 
     public static final double AUTO_PAST_SWITCH_SHORT_DISTANCE = 6.0;
 
     public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
-    public static final double AUTO_APPROACH_DISTANCE = 3.2;
+    public static final double AUTO_SCALE_APPROACH_DISTANCE = 3.2;
+
+    public static final double AUTO_FIELD_RUN_DISTANCE = 18.2;
+    public static final double AUTO_CROSS_FIELD_DISTANCE = 5.0; //TODO 18; The cable protector kills our encoders
+    public static final double AUTO_CROSS_FIELD_STOP_THRESHOLD = 82.0; // - so let's use our rangefinder for a dirty hack
+    public static final double AUTO_DIRECT_APPROACH_DISTANCE = 5.5;
 
     public static final double AUTO_DRIVE_FORWARD_DISTANCE = 9.75;
+
+    public static final int AUTO_HIGH_GEAR_ANGULAR_SPEED_FACTOR = 30;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;
 
+    public static final int AUTO_POST_DROP_DELAY = 400; //in milliseconds
     public static final int AUTO_TIP_CORRECTION_DELAY = 100; //in milliseconds
-    public static final int AUTO_CUBE_DROP_DELAY = 400; //in milliseconds
 
     public static final int AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE = 50;
     public static final int AUTO_CENTER_RIGHT_SWITCH_TURN_ANGLE = -50;
