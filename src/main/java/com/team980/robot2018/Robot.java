@@ -27,7 +27,7 @@ public class Robot extends TimedRobot {
 
     private Joystick driveStick;
     private Joystick driveWheel;
-    private Joystick operatorController; //TODO: Wrapper class for gamepad that names all the buttons and sticks
+    private Joystick operatorController; //TODO: Wrapper class for gamepad that names all the buttons and sticks - already exists!
     private Joystick prajBox;
 
     private DifferentialDrive robotDrive;
@@ -54,6 +54,10 @@ public class Robot extends TimedRobot {
     private int turnAngle;
     private int loopCounter;
     private AutoState state;
+
+    private SendableChooser<PhaseTwoAutonomous> phaseTwoAutoChooser;
+    private int phaseTwoTurnAngle;
+    private PhaseTwoAutoState phaseTwoState;
 
     private boolean inLowGear = true;
     private boolean pacManMode = false;
@@ -133,6 +137,11 @@ public class Robot extends TimedRobot {
         autoChooser.setName("Autonomous Chooser");
         LiveWindow.add(autoChooser); //This actually works
 
+        phaseTwoAutoChooser = new SendableChooser<>();
+        phaseTwoAutoChooser.addObject("[E] Same Side - SWITCH", PhaseTwoAutonomous.E_SAME_SIDE_SWITCH);
+        phaseTwoAutoChooser.addObject("[F] Same Side - SCALE", PhaseTwoAutonomous.F_SAME_SIDE_SCALE);
+        phaseTwoAutoChooser.addDefault("Disabled", PhaseTwoAutonomous.DISABLED);
+
         table.getEntry("Autonomous State").setString("");
     }
 
@@ -162,7 +171,7 @@ public class Robot extends TimedRobot {
         table.getSubTable("Coprocessor").getEntry("Power Cube Height").setNumber(coprocessor.getPowerCubeHeight());
         table.getSubTable("Coprocessor").getEntry("Power Cube Coord").setNumber(coprocessor.getPowerCubeCoord());
         table.getSubTable("Coprocessor").getEntry("Sonar Distance").setNumber(coprocessor.getSonarDistance());
-        table.getSubTable("Coprocessor").getEntry("Lidar Distance").setNumber(coprocessor.getLidarDistance());
+        //table.getSubTable("Coprocessor").getEntry("Lidar Distance").setNumber(coprocessor.getLidarDistance());
     }
 
     @Override
@@ -255,6 +264,23 @@ public class Robot extends TimedRobot {
             default:
                 state = AutoState.FINISHED;
                 break;
+        }
+
+        switch (phaseTwoAutoChooser.getSelected()) {
+            case E_SAME_SIDE_SWITCH:
+                // IF SWITCH ON THIS SIDE
+                phaseTwoState = PhaseTwoAutoState.E_LIFT_TO_SWITCH;
+                // ELSE
+                phaseTwoState = PhaseTwoAutoState.FINISHED;
+                break;
+            case F_SAME_SIDE_SCALE:
+                phaseTwoState = PhaseTwoAutoState.F_TURN_TO_ZERO;
+                break;
+            case DISABLED:
+                phaseTwoState = PhaseTwoAutoState.FINISHED;
+                break;
+            default:
+                phaseTwoState = PhaseTwoAutoState.FINISHED;
         }
     }
 
@@ -677,7 +703,8 @@ public class Robot extends TimedRobot {
                 break;
             case C1_APPROACH_SCALE:
                 if (leftDriveEncoder.getDistance() > Parameters.AUTO_SCALE_APPROACH_DISTANCE
-                        || rightDriveEncoder.getDistance() > Parameters.AUTO_SCALE_APPROACH_DISTANCE) {
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_SCALE_APPROACH_DISTANCE
+                || Math.abs(ypr[1]) >= 10) { //USE TIP PROTECTION TO DROP!
                     robotDrive.stopMotor();
                     loopCounter = 0;
                     state = AutoState.C1_DEPOSIT_CUBE_ON_SCALE;
@@ -983,7 +1010,12 @@ public class Robot extends TimedRobot {
             case EAT_CUBE:
                 robotDrive.arcadeDrive(0, 0);
                 clawSolenoid.set(false); //eat the cube
-                state = AutoState.FINISHED;
+                state = AutoState.FINISHED; //TODO PHASE_TWO;
+                break;
+
+            // PHASE TWO AUTONOMOUS
+            case PHASE_TWO:
+                phaseTwoAutonomousPeriodic();
                 break;
 
             // FINISHED (REDUNDANT COMMENT)
@@ -993,6 +1025,43 @@ public class Robot extends TimedRobot {
         }
 
         table.getEntry("Autonomous State").setString(state.name());
+        table.getEntry("Phase Two Autonomous State").setString(phaseTwoState.name());
+    }
+
+    private void phaseTwoAutonomousPeriodic() { //I decided to split this into a second method
+        switch (phaseTwoState) {
+
+            // PUT THAT SECOND CUBE ON THE SWITCH
+            case E_LIFT_TO_SWITCH:
+                break;
+            case E_TURN_TO_SWITCH:
+                break;
+            case E_DRIVE_INTO_SWITCH:
+                break;
+            case E_DROP_CUBE:
+                break;
+
+            // PUT THAT SECOND CUBE ON THE SCALE
+            case F_TURN_TO_ZERO:
+                break;
+            case F_BACK_UP_FROM_SWITCH:
+                break;
+            case F_TORNADO_TURN:
+                break;
+            case F_DRIVE_INTO_SCALE:
+                //Math.abs(ypr[1]) >= 10
+                break;
+            case F_DROP_CUBE:
+                break;
+            case F_BACK_UP_FROM_SCALE:
+                break;
+
+            // FINISHED (REALLY REDUNDANT COMMENT)
+            case FINISHED:
+                state = AutoState.FINISHED; //Break out of secondary system
+                // Now we're done, for realsies this time!
+                break;
+        }
     }
 
     @Override
@@ -1189,6 +1258,14 @@ public class Robot extends TimedRobot {
         DISABLED
     }
 
+    public enum PhaseTwoAutonomous {
+        E_SAME_SIDE_SWITCH,
+
+        F_SAME_SIDE_SCALE,
+
+        DISABLED
+    }
+
     public enum AutoState {
         A1_CENTER_START,
         A1_TURN_TO_TARGET,
@@ -1243,6 +1320,24 @@ public class Robot extends TimedRobot {
         POINT_AT_CUBE,
         MOVE_TO_CUBE,
         EAT_CUBE,
+
+        PHASE_TWO,
+
+        FINISHED
+    }
+
+    public enum PhaseTwoAutoState {
+        E_LIFT_TO_SWITCH,
+        E_TURN_TO_SWITCH,
+        E_DRIVE_INTO_SWITCH,
+        E_DROP_CUBE,
+
+        F_TURN_TO_ZERO,
+        F_BACK_UP_FROM_SWITCH,
+        F_TORNADO_TURN,
+        F_DRIVE_INTO_SCALE,
+        F_DROP_CUBE,
+        F_BACK_UP_FROM_SCALE,
 
         FINISHED
     }

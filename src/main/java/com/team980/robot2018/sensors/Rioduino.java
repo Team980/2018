@@ -12,7 +12,7 @@ public class Rioduino {
 
     // LOCAL PARAMETERS
     private static final int DEVICE_ADDRESS = 4;
-    private static final int BUFFER_SIZE = 24;
+    private static final int BUFFER_SIZE = 20;
 
     private I2C arduino;
 
@@ -22,7 +22,7 @@ public class Rioduino {
     private int powerCubeHeight;
     private int powerCubeCoord;
     private int sonarDistance;
-    private int lidarDistance;
+    //private int lidarDistance;
 
     public Rioduino() {
         arduino = new I2C(I2C.Port.kMXP, DEVICE_ADDRESS);
@@ -38,7 +38,7 @@ public class Rioduino {
         powerCubeHeight = buffer.getInt(8);
         powerCubeCoord = buffer.getInt(12);
         sonarDistance = buffer.getInt(16);
-        lidarDistance = buffer.getInt(20);
+        //lidarDistance = buffer.getInt(20);
     }
 
     /**
@@ -99,7 +99,7 @@ public class Rioduino {
      * The distance reported by the "lidar" rangefinder
      * Zero if not set
      */
-    public int getLidarDistance() {
+    /*public int getLidarDistance() {
         return lidarDistance;
-    }
+    }*/
 }

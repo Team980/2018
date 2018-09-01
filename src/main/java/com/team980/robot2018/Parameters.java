@@ -132,4 +132,9 @@ public class Parameters {
 
     public static final int AUTO_LEFT_SCALE_TURN_ANGLE = -38;
     public static final int AUTO_RIGHT_SCALE_TURN_ANGLE = 38;
+
+    // PHASE TWO AUTONOMOUS
+    public static final int PHASE_TWO_AUTO_LEFT_SIDE_TURN_ANGLE = -1;
+    public static final int PHASE_TWO_AUTO_RIGHT_SIDE_TURN_ANGLE = 1;
+
 }
