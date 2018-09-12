@@ -55,9 +55,17 @@ public class Robot extends TimedRobot {
     private int loopCounter;
     private AutoState state;
 
-    private SendableChooser<PhaseTwoAutonomous> phaseTwoAutoChooser;
-    private int phaseTwoTurnAngle;
-    private PhaseTwoAutoState phaseTwoState;
+    private double leftSidePreTipDistance = 0;
+    private double rightSidePreTipDistance = 0;
+
+    private AutoState preTipAutoState = AutoState.FINISHED;
+
+    private SendableChooser<SeasonTwoAutonomous> seasonTwoAutoChooser;
+    private int seasonTwoTurnAngle;
+    private SeasonTwoAutoState seasonTwoState;
+
+    private double leftSidePacManDistance = 0;
+    private double rightSidePacManDistance = 0;
 
     private boolean inLowGear = true;
     private boolean pacManMode = false;
@@ -137,10 +145,12 @@ public class Robot extends TimedRobot {
         autoChooser.setName("Autonomous Chooser");
         LiveWindow.add(autoChooser); //This actually works
 
-        phaseTwoAutoChooser = new SendableChooser<>();
-        phaseTwoAutoChooser.addObject("[E] Same Side - SWITCH", PhaseTwoAutonomous.E_SAME_SIDE_SWITCH);
-        phaseTwoAutoChooser.addObject("[F] Same Side - SCALE", PhaseTwoAutonomous.F_SAME_SIDE_SCALE);
-        phaseTwoAutoChooser.addDefault("Disabled", PhaseTwoAutonomous.DISABLED);
+        seasonTwoAutoChooser = new SendableChooser<>();
+        seasonTwoAutoChooser.addObject("[E] Same Side - SWITCH", SeasonTwoAutonomous.E_SAME_SIDE_SWITCH);
+        seasonTwoAutoChooser.addObject("[F] Same Side - SCALE", SeasonTwoAutonomous.F_SAME_SIDE_SCALE);
+        seasonTwoAutoChooser.addDefault("Disabled", SeasonTwoAutonomous.DISABLED);
+        seasonTwoAutoChooser.setName("Season Two Autonomous Chooser");
+        LiveWindow.add(seasonTwoAutoChooser);
 
         table.getEntry("Autonomous State").setString("");
     }
@@ -157,6 +167,15 @@ public class Robot extends TimedRobot {
         } else {
             table.getEntry("Auto Selected").setString("");
         }
+
+        if (seasonTwoAutoChooser.getSelected() != null) {
+            table.getEntry("Season Two Auto Selected").setString(seasonTwoAutoChooser.getSelected().name());
+        } else {
+            table.getEntry("Season Two Auto Selected").setString("");
+        }
+
+        table.getSubTable("Season Two Auto").getSubTable("Pac Man Distance").getEntry("Left").setNumber(leftSidePacManDistance);
+        table.getSubTable("Season Two Auto").getSubTable("Pac Man Distance").getEntry("Right").setNumber(rightSidePacManDistance);
 
         table.getSubTable("Status Flags").getEntry("In Low Gear").setBoolean(inLowGear);
         table.getSubTable("Status Flags").getEntry("Pac Man Mode").setBoolean(pacManMode);
@@ -266,21 +285,21 @@ public class Robot extends TimedRobot {
                 break;
         }
 
-        switch (phaseTwoAutoChooser.getSelected()) {
+        switch (seasonTwoAutoChooser.getSelected()) {
             case E_SAME_SIDE_SWITCH:
                 // IF SWITCH ON THIS SIDE
-                phaseTwoState = PhaseTwoAutoState.E_LIFT_TO_SWITCH;
+                seasonTwoState = SeasonTwoAutoState.E_LIFT_TO_SWITCH;
                 // ELSE
-                phaseTwoState = PhaseTwoAutoState.FINISHED;
+                seasonTwoState = SeasonTwoAutoState.FINISHED;
                 break;
             case F_SAME_SIDE_SCALE:
-                phaseTwoState = PhaseTwoAutoState.F_TURN_TO_ZERO;
+                seasonTwoState = SeasonTwoAutoState.F_REVERSE_PAC_MAN;
                 break;
             case DISABLED:
-                phaseTwoState = PhaseTwoAutoState.FINISHED;
+                seasonTwoState = SeasonTwoAutoState.FINISHED;
                 break;
             default:
-                phaseTwoState = PhaseTwoAutoState.FINISHED;
+                seasonTwoState = SeasonTwoAutoState.FINISHED;
         }
     }
 
@@ -299,6 +318,8 @@ public class Robot extends TimedRobot {
                     && state != AutoState.D1_DRIVE_FORWARD) {
 
                 clawSolenoid.set(true); //open
+
+                preTipAutoState = state;
 
                 isTipping = true;
                 state = AutoState.C3_FAILSAFE_TIPPING_PROTECTION;
@@ -770,17 +791,14 @@ public class Robot extends TimedRobot {
                 break;
             case C3_FAILSAFE_DELAY:
                 if (loopCounter >= Parameters.AUTO_TIP_CORRECTION_DELAY / 20) {
-                    leftDriveEncoder.reset();
-                    rightDriveEncoder.reset();
-
                     state = AutoState.C3_FAILSAFE_TIP_CORRECTION;
                 } else {
                     loopCounter++;
                 }
             case C3_FAILSAFE_TIP_CORRECTION:
                 if (Math.abs(ypr[1]) < 2) {
-                    leftDriveEncoder.reset();
-                    rightDriveEncoder.reset();
+                    leftSidePreTipDistance = leftDriveEncoder.getDistance();
+                    rightSidePreTipDistance = rightDriveEncoder.getDistance();
 
                     state = AutoState.C3_FAILSAFE_BACK_AWAY;
                 } else {
@@ -788,11 +806,11 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C3_FAILSAFE_BACK_AWAY:
-                if (leftDriveEncoder.getDistance() < -2.0
-                        || rightDriveEncoder.getDistance() < -2.0) {
+                if (leftDriveEncoder.getDistance() < leftSidePreTipDistance - 2.0
+                        || rightDriveEncoder.getDistance() < rightSidePreTipDistance - 2.0) {
                     robotDrive.stopMotor();
                     isTipping = false;
-                    state = AutoState.FINISHED;
+                    state = preTipAutoState;
                 } else {
                     robotDrive.arcadeDrive(-0.2, 0, false);
                 }
@@ -964,6 +982,9 @@ public class Robot extends TimedRobot {
                 turnSpeed = ((double) powerCubeOffset) / 160;
 
                 if (Math.abs(powerCubeOffset) < 5) {
+                    leftDriveEncoder.reset();
+                    rightDriveEncoder.reset();
+
                     robotDrive.stopMotor();
                     state = AutoState.MOVE_TO_CUBE;
                 } else if (coprocessor.getPowerCubeCoord() >= 0 && coprocessor.getPowerCubeCoord() < 400) {
@@ -981,6 +1002,9 @@ public class Robot extends TimedRobot {
                 }
 
                 if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 8) { //Cube in mouth... eat it! - TODO consistent
+                    leftSidePacManDistance = leftDriveEncoder.getDistance();
+                    rightSidePacManDistance = rightDriveEncoder.getDistance();
+
                     robotDrive.stopMotor();
                     state = AutoState.EAT_CUBE;
                 } else {
@@ -1013,9 +1037,9 @@ public class Robot extends TimedRobot {
                 state = AutoState.FINISHED; //TODO PHASE_TWO;
                 break;
 
-            // PHASE TWO AUTONOMOUS
+            // Season Two AUTONOMOUS
             case PHASE_TWO:
-                phaseTwoAutonomousPeriodic();
+                seasonTwoAutonomousPeriodic();
                 break;
 
             // FINISHED (REDUNDANT COMMENT)
@@ -1025,11 +1049,11 @@ public class Robot extends TimedRobot {
         }
 
         table.getEntry("Autonomous State").setString(state.name());
-        table.getEntry("Phase Two Autonomous State").setString(phaseTwoState.name());
+        table.getEntry("Season Two Autonomous State").setString(seasonTwoState.name());
     }
 
-    private void phaseTwoAutonomousPeriodic() { //I decided to split this into a second method
-        switch (phaseTwoState) {
+    private void seasonTwoAutonomousPeriodic() { //I decided to split this into a second method
+        switch (seasonTwoState) {
 
             // PUT THAT SECOND CUBE ON THE SWITCH
             case E_LIFT_TO_SWITCH:
@@ -1042,9 +1066,7 @@ public class Robot extends TimedRobot {
                 break;
 
             // PUT THAT SECOND CUBE ON THE SCALE
-            case F_TURN_TO_ZERO:
-                break;
-            case F_BACK_UP_FROM_SWITCH:
+            case F_REVERSE_PAC_MAN:
                 break;
             case F_TORNADO_TURN:
                 break;
@@ -1258,7 +1280,7 @@ public class Robot extends TimedRobot {
         DISABLED
     }
 
-    public enum PhaseTwoAutonomous {
+    public enum SeasonTwoAutonomous {
         E_SAME_SIDE_SWITCH,
 
         F_SAME_SIDE_SCALE,
@@ -1326,14 +1348,13 @@ public class Robot extends TimedRobot {
         FINISHED
     }
 
-    public enum PhaseTwoAutoState {
+    public enum SeasonTwoAutoState {
         E_LIFT_TO_SWITCH,
         E_TURN_TO_SWITCH,
         E_DRIVE_INTO_SWITCH,
         E_DROP_CUBE,
 
-        F_TURN_TO_ZERO,
-        F_BACK_UP_FROM_SWITCH,
+        F_REVERSE_PAC_MAN,
         F_TORNADO_TURN,
         F_DRIVE_INTO_SCALE,
         F_DROP_CUBE,
