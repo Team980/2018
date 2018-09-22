@@ -86,11 +86,11 @@ public class Parameters {
     public static final double AUTO_SWITCH_SPEED = 0.75;
     public static final double AUTO_SWITCH_MIN_SPEED = 0.30;
 
-    public static final double AUTO_SCALE_SPEED = 0.45;
-    public static final double AUTO_SCALE_MIN_SPEED = 0.30;
+    public static final double AUTO_SCALE_SPEED = 0.65;
+    public static final double AUTO_SCALE_MIN_SPEED = 0.45;
 
-    public static final double AUTO_HIGH_GEAR_SPEED = 0.60;
-    public static final double AUTO_HIGH_GEAR_MIN_SPEED = 0.30;
+    public static final double AUTO_HIGH_GEAR_SPEED = AUTO_SCALE_SPEED; //0.60;
+    public static final double AUTO_HIGH_GEAR_MIN_SPEED = AUTO_SCALE_MIN_SPEED; //0.30;
 
     public static final double AUTO_STARTING_DISTANCE = 1.0;
     public static final double AUTO_POSITIONING_DISTANCE = 6.5;
@@ -106,8 +106,9 @@ public class Parameters {
 
     public static final double AUTO_PAST_SWITCH_SHORT_DISTANCE = 6.0;
 
-    public static final double AUTO_NULL_ZONE_DISTANCE = 20.5;
-    public static final double AUTO_SCALE_APPROACH_DISTANCE = 3.2;
+    public static final double AUTO_NULL_ZONE_DISTANCE = 20.0;
+    public static final double AUTO_SCALE_APPROACH_DISTANCE = 3.0;
+    public static final double AUTO_SCALE_REVERSE_DISTANCE = 2.0;
 
     public static final double AUTO_FIELD_RUN_DISTANCE = 18.2;
     public static final double AUTO_CROSS_FIELD_DISTANCE = 5.0; //TODO 18; The cable protector kills our encoders
@@ -117,6 +118,9 @@ public class Parameters {
     public static final double AUTO_DRIVE_FORWARD_DISTANCE = 9.75;
 
     public static final int AUTO_HIGH_GEAR_ANGULAR_SPEED_FACTOR = 30;
+
+    public static final double AUTO_TURN_SPEED = 0.40;
+    public static final double AUTO_TURN_MIN_SPEED = 0.20;
 
     public static final int AUTO_ANGULAR_SPEED_FACTOR = 45;
     public static final int AUTO_ANGULAR_DEADBAND = 5;

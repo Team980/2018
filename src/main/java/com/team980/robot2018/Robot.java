@@ -127,6 +127,7 @@ public class Robot extends TimedRobot {
 
         shifterSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.SHIFTER_SOLENOID_CHANNEL);
         shifterSolenoid.setName("Pneumatics", "Shifter Solenoid");
+        shifterSolenoid.set(true);
         inLowGear = true;
 
         clawSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.CLAW_SOLENOID_CHANNEL);
@@ -246,8 +247,8 @@ public class Robot extends TimedRobot {
                     state = AutoState.C1_MOVE_TO_NULL_ZONE;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
-                    inLowGear = false;
-                    shifterSolenoid.set(false); //HIGH GEAR
+                    //inLowGear = false;
+                    //shifterSolenoid.set(false); //HIGH GEAR
                 } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to LEFT SIDE SWITCH
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
@@ -255,8 +256,8 @@ public class Robot extends TimedRobot {
                     state = AutoState.C4_MOVE_PAST_SWITCH;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
 
-                    inLowGear = false;
-                    shifterSolenoid.set(false); //HIGH GEAR
+                    //inLowGear = false;
+                    //shifterSolenoid.set(false); //HIGH GEAR
                 } else { //Should be impossible
                     state = AutoState.D1_DRIVE_FORWARD;
                 }
@@ -272,8 +273,8 @@ public class Robot extends TimedRobot {
                     state = AutoState.C4_MOVE_PAST_SWITCH;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
-                    inLowGear = false;
-                    shifterSolenoid.set(false); //HIGH GEAR
+                    //inLowGear = false;
+                    //shifterSolenoid.set(false); //HIGH GEAR
                 } else { //Should be impossible
                     state = AutoState.D1_DRIVE_FORWARD;
                 }
@@ -342,12 +343,12 @@ public class Robot extends TimedRobot {
             case A1_TURN_TO_TARGET:
                 double turnSpeed = (turnAngle - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(turnAngle - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -373,12 +374,12 @@ public class Robot extends TimedRobot {
             case A1_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(0 - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -452,12 +453,12 @@ public class Robot extends TimedRobot {
             case A2_TURN_AWAY_FROM_TARGET:
                 turnSpeed = (Math.copySign(90, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(Math.copySign(90, turnAngle) - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
@@ -484,12 +485,12 @@ public class Robot extends TimedRobot {
             case A2_TURN_TO_ALLIANCE:
                 turnSpeed = (Math.copySign(180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(Math.copySign(180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -517,12 +518,12 @@ public class Robot extends TimedRobot {
             case A3_FAILSAFE_TURN_TO_ZERO:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(0 - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -574,12 +575,12 @@ public class Robot extends TimedRobot {
             case B1_TURN_TO_SWITCH:
                 turnSpeed = (turnAngle - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(turnAngle - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
@@ -635,12 +636,12 @@ public class Robot extends TimedRobot {
             case B2_TURN_TO_ALLIANCE:
                 turnSpeed = (Math.copySign(180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SWITCH_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SWITCH_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SWITCH_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(Math.copySign(180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -688,6 +689,8 @@ public class Robot extends TimedRobot {
                         } else if (approachSpeed < Parameters.AUTO_HIGH_GEAR_MIN_SPEED) {
                             approachSpeed = Parameters.AUTO_HIGH_GEAR_MIN_SPEED;
                         }
+
+                        liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
                     } else {
                         approachSpeed = Parameters.AUTO_HIGH_GEAR_SPEED;
                     }
@@ -699,12 +702,12 @@ public class Robot extends TimedRobot {
             case C1_TURN_TO_SCALE:
                 turnSpeed = (turnAngle - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SCALE_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SCALE_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(turnAngle - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) { //todo consistent
@@ -748,8 +751,8 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C1_BACK_UP_FROM_SCALE:
-                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_SCALE_APPROACH_DISTANCE
-                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_SCALE_APPROACH_DISTANCE) {
+                if (leftDriveEncoder.getDistance() < -Parameters.AUTO_SCALE_REVERSE_DISTANCE
+                        || rightDriveEncoder.getDistance() < -Parameters.AUTO_SCALE_REVERSE_DISTANCE) {
                     robotDrive.stopMotor();
                     liftSystem.setPosition(LiftSystem.LiftPosition.BOTTOM);
                     state = AutoState.C2_TURN_TO_SWITCH;
@@ -760,17 +763,17 @@ public class Robot extends TimedRobot {
 
             // SCALE CUBE TWO: SOMEHOW WE GOT THIS FAR
             case C2_TURN_TO_SWITCH:
-                turnSpeed = (Math.copySign(180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+                turnSpeed = (Math.copySign(-180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SCALE_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SCALE_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(Math.copySign(180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND
+                if (Math.abs(Math.copySign(-180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND
                         && liftSystem.getEncoder().getRaw() < LiftSystem.LiftPosition.BOTTOM.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
 
                     robotDrive.stopMotor();
@@ -780,7 +783,8 @@ public class Robot extends TimedRobot {
 
                     state = AutoState.PAC_MAN_MODE;
                 } else {
-                    robotDrive.arcadeDrive(0, -turnSpeed, false);
+                    //robotDrive.arcadeDrive(0, turnSpeed, false);
+                    robotDrive.tankDrive(-turnSpeed, 0, false); //Drive the left side only!
                 }
                 break;
 
@@ -849,12 +853,12 @@ public class Robot extends TimedRobot {
             case C4_TURN_TO_CROSS_FIELD:
                 turnSpeed = (Math.copySign(90, -turnAngle) - ypr[0]) / Parameters.AUTO_HIGH_GEAR_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_HIGH_GEAR_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_HIGH_GEAR_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_HIGH_GEAR_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_HIGH_GEAR_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(Math.copySign(90, -turnAngle) - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -905,12 +909,12 @@ public class Robot extends TimedRobot {
             case C4_TURN_TO_NULL_ZONE:
                 turnSpeed = (0 - ypr[0]) / Parameters.AUTO_HIGH_GEAR_ANGULAR_SPEED_FACTOR;
 
-                if (Math.abs(turnSpeed) > Parameters.AUTO_SCALE_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(turnSpeed) < Parameters.AUTO_SCALE_MIN_SPEED) {
-                    turnSpeed = Math.copySign(Parameters.AUTO_SCALE_MIN_SPEED, turnSpeed);
+                if (Math.abs(turnSpeed) < Parameters.AUTO_TURN_MIN_SPEED) {
+                    turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
                 if (Math.abs(0 - ypr[0]) > Parameters.AUTO_ANGULAR_DEADBAND) {
@@ -1001,7 +1005,8 @@ public class Robot extends TimedRobot {
                     followSpeed = Math.copySign(0.6, followSpeed);
                 }
 
-                if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 8) { //Cube in mouth... eat it! - TODO consistent
+                //if (coprocessor.getSonarDistance() > 0 && coprocessor.getSonarDistance() < 8) { //Cube in mouth... eat it! - TODO consistent
+                if (leftDriveEncoder.getDistance() > 3.0 || rightDriveEncoder.getDistance() > 3.0) { //TODO KILL HACK
                     leftSidePacManDistance = leftDriveEncoder.getDistance();
                     rightSidePacManDistance = rightDriveEncoder.getDistance();
 
