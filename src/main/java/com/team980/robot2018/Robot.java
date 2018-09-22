@@ -55,6 +55,8 @@ public class Robot extends TimedRobot {
     private int loopCounter;
     private AutoState state;
 
+    private Timer joltTimer;
+
     private double leftSidePreTipDistance = 0;
     private double rightSidePreTipDistance = 0;
 
@@ -134,6 +136,8 @@ public class Robot extends TimedRobot {
         clawSolenoid.setName("Pneumatics", "Claw Solenoid");
 
         coprocessor = new Rioduino();
+
+        joltTimer = new Timer();
 
         autoChooser = new SendableChooser<>();
         autoChooser.addObject("[A] Center - SWITCH", Autonomous.A_CENTER_SWITCH);
@@ -244,7 +248,7 @@ public class Robot extends TimedRobot {
                 break;
             case C_LEFT_SIDE_SCALE:
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
-                    state = AutoState.C1_MOVE_TO_NULL_ZONE;
+                    state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
                     //inLowGear = false;
@@ -264,7 +268,7 @@ public class Robot extends TimedRobot {
                 break;
             case C_RIGHT_SIDE_SCALE:
                 if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
-                    state = AutoState.C1_MOVE_TO_NULL_ZONE;
+                    state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
                 } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to RIGHT SIDE SWITCH
@@ -313,6 +317,8 @@ public class Robot extends TimedRobot {
             // Disabled in specific (starting) states
             if (Math.abs(ypr[1]) >= 10 && state != AutoState.A1_CENTER_START
                     && state != AutoState.B1_MOVE_TO_SWITCH
+                    && state != AutoState.C1_QUICK_START
+                    && state != AutoState.C1_JOLT_CUBE
                     && state != AutoState.C1_MOVE_TO_NULL_ZONE
                     && state != AutoState.C4_MOVE_PAST_SWITCH
                     && state != AutoState.C4_CROSS_FIELD
@@ -667,14 +673,34 @@ public class Robot extends TimedRobot {
                 break;
 
             // SCALE
+            case C1_QUICK_START:
+                if (leftDriveEncoder.getDistance() > 1.0
+                        || rightDriveEncoder.getDistance() > 1.0) {
+                    robotDrive.stopMotor();
+
+                    joltTimer.reset();
+                    joltTimer.start();
+
+                    inLowGear = true;
+                    shifterSolenoid.set(true);
+
+                    state = AutoState.C1_JOLT_CUBE;
+                } else {
+                    double gyroTurnCorrection = ypr[0] / 30; //Keep the robot driving straight!
+                    robotDrive.arcadeDrive(1.0, gyroTurnCorrection, false);
+                }
+                break;
+            case C1_JOLT_CUBE:
+                if (joltTimer.hasPeriodPassed(0.5)) {
+                    state = AutoState.C1_MOVE_TO_NULL_ZONE;
+                }
+                robotDrive.arcadeDrive(-0.1, 0, false);
+                break;
             case C1_MOVE_TO_NULL_ZONE:
                 if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE
                         || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE) {
                     robotDrive.stopMotor();
                     liftSystem.setPosition(LiftSystem.LiftPosition.SCALE);
-
-                    inLowGear = true;
-                    shifterSolenoid.set(true);
 
                     state = AutoState.C1_TURN_TO_SCALE;
                 } else {
@@ -781,11 +807,26 @@ public class Robot extends TimedRobot {
                     leftDriveEncoder.reset();
                     rightDriveEncoder.reset();
 
-                    state = AutoState.PAC_MAN_MODE;
+                    state = AutoState.C2_MOVE_TO_CUBE;
                 } else {
                     //robotDrive.arcadeDrive(0, turnSpeed, false);
                     robotDrive.tankDrive(-turnSpeed, 0, false); //Drive the left side only!
                 }
+                break;
+            case C2_MOVE_TO_CUBE:
+                if (leftDriveEncoder.getDistance() > Parameters.AUTO_MOVE_TO_CUBE_DISTANCE
+                        || rightDriveEncoder.getDistance() > Parameters.AUTO_MOVE_TO_CUBE_DISTANCE) {
+                    robotDrive.stopMotor();
+
+                    state = AutoState.C2_GRAB_CUBE;
+                } else {
+                    robotDrive.arcadeDrive(Parameters.AUTO_SCALE_MIN_SPEED, 0, false);
+                }
+                break;
+            case C2_GRAB_CUBE:
+                robotDrive.arcadeDrive(0, 0);
+                clawSolenoid.set(false); //eat the cube
+                state = AutoState.FINISHED; //TODO put it on the scale!
                 break;
 
             // SCALE FAILSAFE: TIPPING PROTECTION
@@ -1320,6 +1361,8 @@ public class Robot extends TimedRobot {
         B2_TURN_TO_ALLIANCE,
         B2_MOVE_PAST_SWITCH,
 
+        C1_QUICK_START,
+        C1_JOLT_CUBE,
         C1_MOVE_TO_NULL_ZONE,
         C1_TURN_TO_SCALE,
         C1_APPROACH_SCALE,
@@ -1327,6 +1370,8 @@ public class Robot extends TimedRobot {
         C1_BACK_UP_FROM_SCALE,
 
         C2_TURN_TO_SWITCH,
+        C2_MOVE_TO_CUBE,
+        C2_GRAB_CUBE,
 
         C3_FAILSAFE_TIPPING_PROTECTION,
         C3_FAILSAFE_DELAY,
