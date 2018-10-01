@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import openrio.powerup.MatchData;
 
 /**
  * FRC Team 980 ThunderBots
@@ -200,7 +199,7 @@ public class Robot extends TimedRobot {
         switch (autoChooser.getSelected()) {
             case A_CENTER_SWITCH:
                 state = AutoState.A1_CENTER_START;
-                switch (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR)) {
+                switch (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR)) {
                     case LEFT: //Center, turn left to left plate
                         turnAngle = Parameters.AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE;
                         break;
@@ -213,7 +212,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case B_LEFT_SIDE_SWITCH:
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
+                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH;
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
                 } else {
@@ -221,7 +220,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case B_RIGHT_SIDE_SWITCH:
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
+                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH;
                     turnAngle = Parameters.AUTO_RIGHT_SWITCH_TURN_ANGLE;
                 } else {
@@ -229,16 +228,16 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C_LEFT_SIDE_SCALE:
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
+                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.LEFT) {
                     state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
                     //inLowGear = false;
                     //shifterSolenoid.set(false); //HIGH GEAR
-                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
+                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to LEFT SIDE SWITCH
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
-                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) { //Cross over to the other scale!
+                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.RIGHT) { //Cross over to the other scale!
                     state = AutoState.C4_MOVE_PAST_SWITCH;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
 
@@ -249,13 +248,13 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C_RIGHT_SIDE_SCALE:
-                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
+                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.RIGHT) {
                     state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
-                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
+                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to RIGHT SIDE SWITCH
                     turnAngle = Parameters.AUTO_RIGHT_SWITCH_TURN_ANGLE;
-                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) { //Cross over to the other scale!
+                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.LEFT) { //Cross over to the other scale!
                     state = AutoState.C4_MOVE_PAST_SWITCH;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
@@ -678,10 +677,10 @@ public class Robot extends TimedRobot {
                     state = AutoState.C1_TURN_TO_SCALE;
                 } else {
                     double approachSpeed;
-                    if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.75
-                            || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.75) { //Only slow down in last 25% of run
+                    if (leftDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.40
+                            || rightDriveEncoder.getDistance() > Parameters.AUTO_NULL_ZONE_DISTANCE * 0.40) { //Only slow down in last 40% of run
                         approachSpeed = Parameters.AUTO_HIGH_GEAR_SPEED * ((Parameters.AUTO_NULL_ZONE_DISTANCE - leftDriveEncoder.getDistance())
-                                / (Parameters.AUTO_NULL_ZONE_DISTANCE * 0.25));
+                                / (Parameters.AUTO_NULL_ZONE_DISTANCE * 0.60));
 
                         if (approachSpeed > Parameters.AUTO_HIGH_GEAR_SPEED) {
                             approachSpeed = Parameters.AUTO_HIGH_GEAR_SPEED;
@@ -762,7 +761,7 @@ public class Robot extends TimedRobot {
 
             // SCALE CUBE TWO: SOMEHOW WE GOT THIS FAR
             case C2_TURN_TO_SWITCH:
-                turnSpeed = (Math.copySign(-180, turnAngle) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
+                turnSpeed = ((Math.copySign(180, turnAngle) * -1) - ypr[0]) / Parameters.AUTO_ANGULAR_SPEED_FACTOR;
 
                 if (Math.abs(turnSpeed) > Parameters.AUTO_TURN_SPEED) {
                     turnSpeed = Math.copySign(Parameters.AUTO_TURN_SPEED, turnSpeed);
@@ -772,7 +771,7 @@ public class Robot extends TimedRobot {
                     turnSpeed = Math.copySign(Parameters.AUTO_TURN_MIN_SPEED, turnSpeed);
                 }
 
-                if (Math.abs(Math.copySign(-180, turnAngle) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND
+                if (Math.abs((Math.copySign(180, turnAngle) * 1) - ypr[0]) <= Parameters.AUTO_ANGULAR_DEADBAND
                         && liftSystem.getEncoder().getRaw() < LiftSystem.LiftPosition.BOTTOM.getDistance() + Parameters.LIFT_SYSTEM_POSITION_DEADBAND) {
 
                     robotDrive.stopMotor();
@@ -783,7 +782,7 @@ public class Robot extends TimedRobot {
                     state = AutoState.C2_MOVE_TO_CUBE;
                 } else {
                     //robotDrive.arcadeDrive(0, turnSpeed, false);
-                    robotDrive.tankDrive(-turnSpeed, 0, false); //Drive the left side only!
+                    robotDrive.tankDrive(turnSpeed * 0.5, -turnSpeed, false); //Drive the right side only! - TODO account for left/right
                 }
                 break;
             case C2_MOVE_TO_CUBE:
@@ -803,8 +802,8 @@ public class Robot extends TimedRobot {
                 joltTimer.reset();
                 joltTimer.start();
 
-                if ((MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT && turnAngle == Parameters.AUTO_LEFT_SCALE_TURN_ANGLE)
-                        || (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT && turnAngle == Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE)) {
+                if ((HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT && turnAngle == Parameters.AUTO_LEFT_SCALE_TURN_ANGLE)
+                        || (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT && turnAngle == Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE)) {
                     state = AutoState.C2_LIFT_DELAY;
                 } else {
                     state = AutoState.FINISHED;

@@ -21,7 +21,7 @@ deploy {
     targets {
         target("roborio", RoboRIO) {
             team = TEAM
-            addresses << '169.254.198.12' //In order of preference
+            addresses << '172.22.11.2' << '10.9.80.212' << '169.254.42.200' << '169.24.198.12' //In order of preference
         }
     }
     artifacts {
