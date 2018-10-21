@@ -3,6 +3,7 @@ package com.team980.robot2018;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.ctre.phoenix.sensors.PigeonIMU;
+import com.team980.robot2018.sensors.Rioduino;
 import com.team980.robot2018.subsystems.LiftSystem;
 import com.team980.robot2018.util.PigeonGyro;
 import edu.wpi.first.networktables.NetworkTable;
@@ -11,6 +12,7 @@ import edu.wpi.first.wpilibj.*;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import openrio.powerup.MatchData;
 
 /**
  * FRC Team 980 ThunderBots
@@ -46,7 +48,7 @@ public class Robot extends TimedRobot {
     private Solenoid shifterSolenoid;
     private Solenoid clawSolenoid;
 
-    //private Rioduino coprocessor;
+    private Rioduino coprocessor;
 
     private SendableChooser<Autonomous> autoChooser;
     private int turnAngle;
@@ -129,7 +131,7 @@ public class Robot extends TimedRobot {
         clawSolenoid = new Solenoid(Parameters.PCM_CAN_ID, Parameters.CLAW_SOLENOID_CHANNEL);
         clawSolenoid.setName("Pneumatics", "Claw Solenoid");
 
-        //coprocessor = new Rioduino();
+        coprocessor = new Rioduino();
 
         joltTimer = new Timer();
 
@@ -152,7 +154,7 @@ public class Robot extends TimedRobot {
         liftSystem.updateData();
 
         imu.getYawPitchRoll(ypr);
-        //coprocessor.updateData();
+        coprocessor.updateData();
 
         if (autoChooser.getSelected() != null) {
             table.getEntry("Auto Selected").setString(autoChooser.getSelected().name());
@@ -171,11 +173,11 @@ public class Robot extends TimedRobot {
         table.getSubTable("IMU").getEntry("Pitch").setNumber(ypr[1]);
         table.getSubTable("IMU").getEntry("Roll").setNumber(ypr[2]);
 
-        /*table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
+        table.getSubTable("Coprocessor").getEntry("Vision Target Coord").setNumber(coprocessor.getVisionTargetCoord());
         table.getSubTable("Coprocessor").getEntry("Power Cube Width").setNumber(coprocessor.getPowerCubeWidth());
         table.getSubTable("Coprocessor").getEntry("Power Cube Height").setNumber(coprocessor.getPowerCubeHeight());
         table.getSubTable("Coprocessor").getEntry("Power Cube Coord").setNumber(coprocessor.getPowerCubeCoord());
-        table.getSubTable("Coprocessor").getEntry("Sonar Distance").setNumber(coprocessor.getSonarDistance());*/
+        table.getSubTable("Coprocessor").getEntry("Sonar Distance").setNumber(coprocessor.getSonarDistance());
         //table.getSubTable("Coprocessor").getEntry("Lidar Distance").setNumber(coprocessor.getLidarDistance());
     }
 
@@ -199,7 +201,7 @@ public class Robot extends TimedRobot {
         switch (autoChooser.getSelected()) {
             case A_CENTER_SWITCH:
                 state = AutoState.A1_CENTER_START;
-                switch (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR)) {
+                switch (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR)) {
                     case LEFT: //Center, turn left to left plate
                         turnAngle = Parameters.AUTO_CENTER_LEFT_SWITCH_TURN_ANGLE;
                         break;
@@ -212,7 +214,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case B_LEFT_SIDE_SWITCH:
-                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT) {
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH;
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
                 } else {
@@ -220,7 +222,7 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case B_RIGHT_SIDE_SWITCH:
-                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT) {
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH;
                     turnAngle = Parameters.AUTO_RIGHT_SWITCH_TURN_ANGLE;
                 } else {
@@ -228,17 +230,18 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C_LEFT_SIDE_SCALE:
-                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.LEFT) {
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
                     //inLowGear = false;
                     //shifterSolenoid.set(false); //HIGH GEAR
-                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT) {
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to LEFT SIDE SWITCH
                     turnAngle = Parameters.AUTO_LEFT_SWITCH_TURN_ANGLE;
-                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.RIGHT) { //Cross over to the other scale!
-                    state = AutoState.C4_MOVE_PAST_SWITCH;
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) { //Cross over to the other scale!
+                    //state = AutoState.C4_MOVE_PAST_SWITCH;
+                    state = AutoState.D1_DRIVE_FORWARD;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
 
                     //inLowGear = false;
@@ -248,14 +251,15 @@ public class Robot extends TimedRobot {
                 }
                 break;
             case C_RIGHT_SIDE_SCALE:
-                if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.RIGHT) {
+                if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.C1_QUICK_START;
                     turnAngle = Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE;
-                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT) {
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT) {
                     state = AutoState.B1_MOVE_TO_SWITCH; //Fall back to RIGHT SIDE SWITCH
                     turnAngle = Parameters.AUTO_RIGHT_SWITCH_TURN_ANGLE;
-                } else if (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SCALE) == HackMatchData.OwnedSide.LEFT) { //Cross over to the other scale!
-                    state = AutoState.C4_MOVE_PAST_SWITCH;
+                } else if (MatchData.getOwnedSide(MatchData.GameFeature.SCALE) == MatchData.OwnedSide.LEFT) { //Cross over to the other scale!
+                    //state = AutoState.C4_MOVE_PAST_SWITCH;
+                    state = AutoState.D1_DRIVE_FORWARD;
                     turnAngle = Parameters.AUTO_LEFT_SCALE_TURN_ANGLE;
 
                     //inLowGear = false;
@@ -802,8 +806,8 @@ public class Robot extends TimedRobot {
                 joltTimer.reset();
                 joltTimer.start();
 
-                if ((HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.LEFT && turnAngle == Parameters.AUTO_LEFT_SCALE_TURN_ANGLE)
-                        || (HackMatchData.getOwnedSide(HackMatchData.GameFeature.SWITCH_NEAR) == HackMatchData.OwnedSide.RIGHT && turnAngle == Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE)) {
+                if ((MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.LEFT && turnAngle == Parameters.AUTO_LEFT_SCALE_TURN_ANGLE)
+                        || (MatchData.getOwnedSide(MatchData.GameFeature.SWITCH_NEAR) == MatchData.OwnedSide.RIGHT && turnAngle == Parameters.AUTO_RIGHT_SCALE_TURN_ANGLE)) {
                     state = AutoState.C2_LIFT_DELAY;
                 } else {
                     state = AutoState.FINISHED;
@@ -886,7 +890,7 @@ public class Robot extends TimedRobot {
                         || rightDriveEncoder.getDistance() > Parameters.AUTO_FIELD_RUN_DISTANCE) {
                     robotDrive.stopMotor();
 
-                    liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
+                    //liftSystem.setPosition(LiftSystem.LiftPosition.AUTO);
 
                     state = AutoState.C4_TURN_TO_CROSS_FIELD;
                 } else {

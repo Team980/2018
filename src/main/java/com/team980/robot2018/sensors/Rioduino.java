@@ -8,7 +8,6 @@ import java.nio.ByteBuffer;
  * Communicates with a Rioduino connected to the RoboRIO via MXP.
  * Also shares the received data with very easy to use getter methods.
  */
-@SuppressWarnings("unused")
 public class Rioduino {
 
     // LOCAL PARAMETERS
