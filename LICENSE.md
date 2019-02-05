@@ -1,6 +1,6 @@
  MIT License
  
- Copyright (c) 2018 FRC Team 980 ThunderBots
+ Copyright (c) 2018-2019 FRC Team 980 ThunderBots
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
